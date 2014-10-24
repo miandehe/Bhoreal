@@ -3,21 +3,22 @@
 #include <EEPROM.h>
 
 #if MODEL == SLIMPRO
-  const char mySSID[] = "hangar_lab";  
-  const char myPass[] = "labinteractius";
-  const char *IP = "172.26.255.255";
-  const char myAuth[] = WPA2;
-  const int protocol = UDP;
+//  const char mySSID[] = "hangar_lab";  
+//  const char myPass[] = "labinteractius";
+//  const char *IP = "172.26.255.255";
+//  const char myAuth[] = WPA2;
+
   
 //  const char mySSID[] = "DI&L";  
 //  const char myPass[] = "vdossier";
 //  const char *IP = "172.26.0.255";
   
-//  const char mySSID[] = "Mi$Red";  
-//  const char myPass[] = "FINALFANTASY";
-//  const char *IP = "192.168.0.255";
-//  const char myAuth[] = WPA2;
+  const char mySSID[] = "Mi$Red";  
+  const char myPass[] = "FINALFANTASY";
+  const char *IP = "192.168.0.255";
+  const char myAuth[] = WPA2;
   
+  const int protocol = UDP;
   const char antenna[] = INT_ANT;
   const uint16_t outPort = 8000;
   const uint16_t localPort = 9000;   
@@ -276,7 +277,7 @@ void Bhoreal::begin()
         {
           sleep();
         } 
-       timer1Initialize();  
+      timer1Initialize();  
     #endif
     
     show();
@@ -1423,67 +1424,6 @@ void Bhoreal::setPixelColor(
 
 #if (MODEL == SLIMPRO)
   
-static char buffer_int[64];
-byte count_char = 0;
-byte count_char2 = 0;
-
-//  boolean Bhoreal::addData(byte inByte)
-//    {
-//      if ((inByte == '/')&& (count_char2==0))
-//        {
-//           buffer_int[count_char] = inByte;
-//           count_char = 1;
-//           count_char2 = 1;
-//           return false;
-//        }
-//      else if((count_char==(MESSAGE_SIZE-1))||(count_char2>2))
-//        {
-//          buffer_int[count_char] = inByte;
-//          buffer_int[count_char + 1] = 0x00;
-//          count_char = 0;
-//          count_char2 = 0;
-//          return true;
-//        }
-//      else
-//        {
-//          if (inByte == '/') count_char2 = count_char2 + 1;
-//          buffer_int[count_char] = inByte;
-//          count_char = count_char + 1;
-//        } 
-//      return false;
-//  }
-  
-//    char* Bhoreal::getIP() {
-//    if (EnterCommandMode()) 
-//    {
-//      if (SendCommand(F("get ip"), false, "IP="))
-//      {
-//        char newChar;
-//        byte offset = 0;
-//  
-//        while (offset < MAC_ADDRESS_BUFFER_SIZE) {
-//          if (Serial1.available())
-//          {
-//            newChar = Serial1.read();
-//            //Serial.println(newChar);
-//            if (newChar == '\n') {
-//              buffer[offset] = '\x00';
-//              break;
-//            } 
-//            else if (newChar != -1) {
-//              buffer[offset] = newChar;
-//              offset++;
-//            }
-//          }
-//        }
-//        buffer[MAC_ADDRESS_BUFFER_SIZE-1] = '\x00';
-//        ExitCommandMode();
-//      }        
-//    }
-//  
-//    return buffer;
-//  }
-  
   boolean offsetWIFI = 0;
   byte inByte = 0;
   byte ledNumber = 0;
@@ -1498,14 +1438,13 @@ byte count_char2 = 0;
                 offsetWIFI = true; 
                 ledNumber = inByte&0x7F;
           }
-        else if ((inByte<127)&&(offsetWIFI==true))
+        else if ((inByte<=127)&&(offsetWIFI==true))
           {
             uint32_t c = hue2rgb(inByte);  // velocity is used to HUE color selection and HUE is converted to RGB uint32 
             uint8_t
               r = (uint8_t)(c >> 16),
               g = (uint8_t)(c >>  8),
               b = (uint8_t)c;
-      
             setPixelColor(remapSlim[GIR][ledNumber>>3][ledNumber%8], r, g, b);
             refresh_led++;
             time_led = millis();
