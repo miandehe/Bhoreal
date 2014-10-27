@@ -45,11 +45,6 @@ byte command = 0;
 boolean ready = true;
 uint16_t IntensityMAX = 255;
 
-// Default draw colour. Each channel can be between 0 and 255.
-int red = 0;
-int green = 0;
-int blue = 0;
-
 // Auxiliary analog output definitions
 #define ANALOG0 A5 // SLIDER POT MINI
 #define ANALOG1 A1
@@ -219,9 +214,9 @@ void Bhoreal::begin()
     //Gestion de sleep del Bhoreal
     #if (MODEL == SLIMPRO) 
       #if ENERGY_CONTROL
-        if ((EEPROM.read(0)>0)||((readBattery()<BAT_MIN)&&(readBattery()>2000)))
+        if ((EEPROM.read(EE_ADDR_POWER)>0)||((readBattery()<BAT_MIN)&&(readBattery()>2000)))
           {
-            EEPROM.write(0, 0);       
+            EEPROM.write(EE_ADDR_POWER, 0);       
             slaveSend(2); //Apaga atmega328
             sleep(); 
             sleepNow();
@@ -229,7 +224,7 @@ void Bhoreal::begin()
         else 
       #endif
         {
-          EEPROM.write(0, 1);   
+          EEPROM.write(EE_ADDR_POWER, 1);   
           slaveSend(1); //Activa atmega328
         } 
       // Start the serial port   
@@ -246,7 +241,7 @@ void Bhoreal::begin()
     
     // Start the wifi
     #if (MODEL == SLIMPRO)
-      Serial1.begin(baud[0]); //WIFI inicializado a 9600
+      Serial1.begin(baud[0]); //WIFI inicializado a 115200
       #if ENERGY_CONTROL
         if ((readBattery()<2000)||(slaveRead(3)>0)) //Low battery level or usb connected
           {
@@ -259,7 +254,7 @@ void Bhoreal::begin()
       #endif
         {
           awake();
-          BaudSetup();
+          config();
           if (Connect()) 
             {
               Serial.println("Conectado!!");
@@ -277,7 +272,7 @@ void Bhoreal::begin()
         {
           sleep();
         } 
-      timer1Initialize();  
+       timer1Initialize();  
     #endif
     
     show();
@@ -307,7 +302,54 @@ void Bhoreal::begin()
   #endif
 }
 
+void Bhoreal::config(){
+  delay(5000);
+  Serial.println(__TIME__);
+  Serial.println(readData(EE_ADDR_TIME_VERSION));
+  if (!compareData(__TIME__, readData(EE_ADDR_TIME_VERSION)))
+  {
+    writeData(EE_ADDR_TIME_VERSION, __TIME__);
+    BaudSetup();
+    reset();
+    BaudSetup();
+    reConnect();
+  }
+}
 
+boolean Bhoreal::compareData(char* text, char* text1)
+{
+  if ((strlen(text))!=(strlen(text1))) return false;
+  else 
+  {
+    for(int i=0; i<strlen(text); i++)
+    {
+      if (text[i]!=text1[i]) return false;
+    }
+  }
+  return true;
+}
+
+char* Bhoreal::readData(uint16_t eeaddress)
+{
+  uint16_t i;
+  uint8_t temp = EEPROM.read(eeaddress);
+  for ( i = eeaddress; ((temp!= 0x00)&&(temp<0x7E)&&(temp>0x1F)&&((i - eeaddress)<buffer_length)); i++) 
+  {
+    buffer[i - eeaddress] = EEPROM.read(i);
+    temp = EEPROM.read(i + 1);
+  }
+  buffer[i - eeaddress] = 0x00; 
+  return buffer;
+}
+
+void Bhoreal::writeData(uint32_t eeaddress, char* text)
+{
+  for (uint16_t i = eeaddress; i< (eeaddress + buffer_length); i++) EEPROM.write(i, 0x00);
+  for (uint16_t i = eeaddress; text[i - eeaddress]!= 0x00; i++) 
+    {
+      EEPROM.write(i, text[i - eeaddress]); 
+    }
+}
 
 ////////////////////////////////////////////////////////////////
 //////////////////////       STARTUP      //////////////////////
@@ -750,37 +792,41 @@ ISR(TIMER1_OVF_vect)
 //////////////////////     HUE -> RGB    //////////////////////
 ///////////////////////////////////////////////////////////////
 
+  uint8_t rh;
+  uint8_t gh;
+  uint8_t bh;
+  
 uint32_t Bhoreal::hue2rgb(uint16_t hueValue)
 {
-  
-  uint8_t r;
-  uint8_t g;
-  uint8_t b;
-  hueValue<<= 3;  // 128 midi steps -> 1024 hue steps
-  
-  if (hueValue < 341)  { // Lowest third of the potentiometer's range (0-340)
-    hueValue = (hueValue * 3) / 4; // Normalize to 0-255
-
-    r = 255 - hueValue;  // Red from full to off
-    g = hueValue;        // Green from off to full
-    b = 1;               // Blue off
-  }
-  else if (hueValue < 682) { // Middle third of potentiometer's range (341-681)
-    hueValue = ( (hueValue-341) * 3) / 4; // Normalize to 0-255
-
-    r = 1;              // Red off
-    g = 255 - hueValue; // Green from full to off
-    b = hueValue;       // Blue from off to full
-  }
-  else  { // Upper third of potentiometer"s range (682-1023)
-    hueValue = ( (hueValue-683) * 3) / 4; // Normalize to 0-255
-
-    r = hueValue;       // Red from off to full
-    g = 1;              // Green off
-    b = 255 - hueValue; // Blue from full to off
-  }
-  
-  return ((uint32_t)r << 16) | ((uint32_t)g <<  8) | b;
+  if (hueValue<=127)
+    {
+      hueValue<<= 3;  // 128 midi steps -> 1024 hue steps
+      
+      if (hueValue < 341)  { // Lowest third of the potentiometer's range (0-340)
+        hueValue = (hueValue * 3) / 4; // Normalize to 0-255
+    
+        rh = 255 - hueValue;  // Red from full to off
+        gh = hueValue;        // Green from off to full
+        bh = 1;               // Blue off
+      }
+      else if (hueValue < 682) { // Middle third of potentiometer's range (341-681)
+        hueValue = ( (hueValue-341) * 3) / 4; // Normalize to 0-255
+    
+        rh = 1;              // Red off
+        gh = 255 - hueValue; // Green from full to off
+        bh = hueValue;       // Blue from off to full
+      }
+      else  { // Upper third of potentiometer"s range (682-1023)
+        hueValue = ( (hueValue-683) * 3) / 4; // Normalize to 0-255
+    
+        rh = hueValue;       // Red from off to full
+        gh = 1;              // Green off
+        bh = 255 - hueValue; // Blue from full to off
+      }
+      
+      return ((uint32_t)rh << 16) | ((uint32_t)gh <<  8) | bh;
+   }
+  else return 0;
 
 }
 
@@ -919,8 +965,6 @@ void Bhoreal::WIFIsleep() {
       SendCommand(F("sleep"));
 }
 
-static char buffer[32];
-
 char* itoa(int32_t number)
   {
    byte count = 0;
@@ -977,10 +1021,21 @@ boolean Bhoreal::Connect()
   {
     if (!Ready())
     {
+      return reConnect();   
+    }
+     else return true;  
+  }
+ 
+  boolean Bhoreal::reConnect()
+  {
       if(EnterCommandMode())
         {    
             SendCommand(F("set wlan join 1")); // Disable AP mode
             SendCommand(F("set ip dhcp 1")); // Enable DHCP server
+            SendCommand(F("set comm time 5"));
+            SendCommand(F("set ip flags 0x7"));
+            SendCommand(F("set wlan rate 15"));
+            SendCommand(F("set comm size 1420"));
             SendCommand(F("set ip proto "), true);
             SendCommand(itoa(protocol));
             SendCommand(F("set ip host "), true);
@@ -1014,8 +1069,6 @@ boolean Bhoreal::Connect()
             if (Ready()) return true;
         }
         return false;   
-    }
-     else return true;  
   }
   
   boolean Bhoreal::reset() {
@@ -1423,29 +1476,31 @@ void Bhoreal::setPixelColor(
 /*TIMER*/
 
 #if (MODEL == SLIMPRO)
-  
+   
   boolean offsetWIFI = 0;
   byte inByte = 0;
   byte ledNumber = 0;
-  
+  uint32_t color;
+  uint8_t red, green, blue;
   void Bhoreal::WIFIRead()
     {
      while (Serial1.available())
       {
         inByte = Serial1.read();
-        if (inByte>127) 
+//        Serial.println(inByte);
+        if ((inByte>127)&&(inByte<192))
           {
                 offsetWIFI = true; 
                 ledNumber = inByte&0x7F;
           }
-        else if ((inByte<=127)&&(offsetWIFI==true))
+        else if (offsetWIFI==true)
           {
-            uint32_t c = hue2rgb(inByte);  // velocity is used to HUE color selection and HUE is converted to RGB uint32 
-            uint8_t
-              r = (uint8_t)(c >> 16),
-              g = (uint8_t)(c >>  8),
-              b = (uint8_t)c;
-            setPixelColor(remapSlim[GIR][ledNumber>>3][ledNumber%8], r, g, b);
+            color = hue2rgb(inByte);  // velocity is used to HUE color selection and HUE is converted to RGB uint32 
+            red = (uint8_t)(color >> 16);
+            green = (uint8_t)(color >>  8);
+            blue = (uint8_t)color;
+      
+            setPixelColor(remapSlim[GIR][ledNumber>>3][ledNumber%8], red, green, blue);
             refresh_led++;
             time_led = millis();
             offsetWIFI = false; 
@@ -1455,7 +1510,7 @@ void Bhoreal::setPixelColor(
 
   void Bhoreal::serialRequests()
   {
-    sei();
+//    sei();
     Bhoreal_.timer1Stop();
     WIFIRead();
     Bhoreal_.timer1Initialize(); // set a timer of length 1000000 microseconds (or 1 sec - or 1Hz)  
@@ -1495,7 +1550,7 @@ void Bhoreal::setPixelColor(
   {
     TCCR1A = 0;                 // clear control register A 
     TCCR1B = _BV(WGM13);        // set mode 8: phase and frequency correct pwm, stop the timer
-    timer1SetPeriod(20); 
+    timer1SetPeriod(1000);     //Time in microseconds
     TIMSK1 = _BV(TOIE1);                                  
   }
   
