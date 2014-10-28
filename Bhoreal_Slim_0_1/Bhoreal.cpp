@@ -102,7 +102,9 @@ byte tempADC; //Temporary storage for comparison purposes
   
   Bhoreal Bhoreal_;
   uint8_t pixels[numBytes];
-  uint32_t baud[3]={ 115200, 57600, 9600};
+//  uint32_t baud[3]={ 115200, 57600, 9600};
+  uint32_t baud[3]={9600, 57600, 115200};
+//  uint32_t baud[3]={57600, 9600, 115200};
   
 boolean pressed[8][8] = {      // pushbottons states matrix
   {1,1,1,1,1,1,1,1},
@@ -303,14 +305,12 @@ void Bhoreal::begin()
 }
 
 void Bhoreal::config(){
-//  delay(5000);
-//  Serial.println(__TIME__);
-//  Serial.println(readData(EE_ADDR_TIME_VERSION));
   if (!compareData(__TIME__, readData(EE_ADDR_TIME_VERSION)))
   {
     writeData(EE_ADDR_TIME_VERSION, __TIME__);
     BaudSetup();
     reset();
+    delay(1000);
     BaudSetup();
     reConnect();
   }
@@ -1216,6 +1216,7 @@ boolean Bhoreal::Connect()
       for (int i=2; ((i>0)&&repair); i--)
       {
         Serial1.begin(baud[i]);
+        delay(500);
         if(EnterCommandMode()) 
         {
           SendCommand(F("set u b "), true);
@@ -1225,8 +1226,9 @@ boolean Bhoreal::Connect()
           repair = false;
           Serial.println("Baudrate actualizado!!");
         }
-        Serial1.begin(baud[0]);
       }
+      Serial1.begin(baud[0]);
+      delay(500);
     }
   }
 

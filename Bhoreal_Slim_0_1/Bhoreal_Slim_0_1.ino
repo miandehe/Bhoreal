@@ -28,7 +28,7 @@ void loop () {
   
   Bhoreal.refresh();
   
-//  Bhoreal.serialRequests();
+  //Bhoreal.WIFIRead();
 
 }
 
