@@ -3,20 +3,20 @@
 #include <EEPROM.h>
 
 #if MODEL == SLIMPRO
-//  const char mySSID[] = "hangar_lab";  
-//  const char myPass[] = "labinteractius";
-//  const char *IP = "172.26.255.255";
-//  const char myAuth[] = WPA2;
+  const char mySSID[] = "hangar_lab";  
+  const char myPass[] = "labinteractius";
+  const char *IP = "172.26.255.255";
+  const char myAuth[] = WPA2;
 
   
 //  const char mySSID[] = "DI&L";  
 //  const char myPass[] = "vdossier";
 //  const char *IP = "172.26.0.255";
   
-  const char mySSID[] = "Mi$Red";  
-  const char myPass[] = "FINALFANTASY";
-  const char *IP = "192.168.0.255";
-  const char myAuth[] = WPA2;
+//  const char mySSID[] = "Mi$Red";  
+//  const char myPass[] = "FINALFANTASY";
+//  const char *IP = "192.168.0.255";
+//  const char myAuth[] = WPA2;
   
   const int protocol = UDP;
   const char antenna[] = INT_ANT;
@@ -1213,7 +1213,7 @@ boolean Bhoreal::Connect()
     if(!EnterCommandMode())
     {
       boolean repair = true;
-      for (int i=0; ((i<3)&&repair); i++)
+      for (int i=2; ((i>0)&&repair); i--)
       {
         Serial1.begin(baud[i]);
         if(EnterCommandMode()) 
