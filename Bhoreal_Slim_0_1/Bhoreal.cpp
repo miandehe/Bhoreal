@@ -303,9 +303,9 @@ void Bhoreal::begin()
 }
 
 void Bhoreal::config(){
-  delay(5000);
-  Serial.println(__TIME__);
-  Serial.println(readData(EE_ADDR_TIME_VERSION));
+//  delay(5000);
+//  Serial.println(__TIME__);
+//  Serial.println(readData(EE_ADDR_TIME_VERSION));
   if (!compareData(__TIME__, readData(EE_ADDR_TIME_VERSION)))
   {
     writeData(EE_ADDR_TIME_VERSION, __TIME__);
@@ -929,13 +929,6 @@ boolean EnterCommandMode() {
     return false;
 }
 
-boolean Reset() {
-      EnterCommandMode();
-      SendCommand(F("factory R"), false, "Set Factory Defaults"); // Store settings
-      SendCommand(F("save"), false, "Storing in config"); // Store settings
-      SendCommand(F("reboot"), false, "*READY*");
-}
-
 boolean ExitCommandMode() {
     for (int retryCount = 0; retryCount < COMMAND_MODE_ENTER_RETRY_ATTEMPTS; retryCount++) 
      {
@@ -1066,7 +1059,11 @@ boolean Bhoreal::Connect()
             Serial.println(antenna);
             SendCommand(F("save"), false, "Storing in config"); // Store settings
             SendCommand(F("reboot"), false, "*READY*");
-            if (Ready()) return true;
+            if (Ready()) 
+              {
+                Serial.println("Modulo configurado.");
+                return true;
+              }
         }
         return false;   
   }
@@ -1076,6 +1073,7 @@ boolean Bhoreal::Connect()
     SendCommand(F("factory R"), false, "Set Factory Defaults"); // Store settings
     SendCommand(F("save"), false, "Storing in config"); // Store settings
     SendCommand(F("reboot"), false, "*READY*");
+    Serial.println("Modulo reseteado");
   }
 
   int Bhoreal::checkWiFly() {
