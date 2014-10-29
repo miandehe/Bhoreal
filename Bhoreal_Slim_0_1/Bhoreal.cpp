@@ -3,10 +3,10 @@
 #include <EEPROM.h>
 
 #if MODEL == SLIMPRO
-  const char mySSID[] = "hangar_lab";  
-  const char myPass[] = "labinteractius";
-  const char *IP = "172.26.255.255";
-  const char myAuth[] = WPA2;
+//  const char mySSID[] = "hangar_lab";  
+//  const char myPass[] = "labinteractius";
+//  const char *IP = "172.26.255.255";
+//  const char myAuth[] = WPA2;
 
   
 //  const char mySSID[] = "hangar_oficines";  
@@ -14,10 +14,10 @@
 //  const char *IP = "172.26.255.255";
 //  const char myAuth[] = WPA1;
   
-//  const char mySSID[] = "Mi$Red";  
-//  const char myPass[] = "FINALFANTASY";
-//  const char *IP = "192.168.0.255";
-//  const char myAuth[] = WPA2;
+  const char mySSID[] = "Mi$Red";  
+  const char myPass[] = "FINALFANTASY";
+  const char *IP = "192.168.0.255";
+  const char myAuth[] = WPA2;
   
   const int protocol = UDP;
   const char antenna[] = INT_ANT;
@@ -1496,21 +1496,24 @@ void Bhoreal::setPixelColor(
           }
         else if (offsetWIFI==true)
           {
-            if (inByte>0)
+            if ((inByte>0)&&(inByte<=127))
               {
                 color = hue2rgb(inByte);  // velocity is used to HUE color selection and HUE is converted to RGB uint32 
                 red = (uint8_t)(color >> 16);
                 green = (uint8_t)(color >>  8);
                 blue = (uint8_t)color;
                 setPixelColor(remapSlim[GIR][ledNumber>>3][ledNumber%8], red, green, blue);
+                refresh_led++;
+                time_led = millis();
+                offsetWIFI = false; 
               }
-             else
+             else if (inByte==0)
               {
                 setPixelColor(remapSlim[GIR][ledNumber>>3][ledNumber%8], 0, 0, 0);
+                refresh_led++;
+                time_led = millis();
+                offsetWIFI = false; 
               }
-            refresh_led++;
-            time_led = millis();
-            offsetWIFI = false; 
           }
       }
     }
