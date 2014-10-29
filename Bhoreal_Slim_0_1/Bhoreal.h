@@ -71,7 +71,7 @@ class Bhoreal {
     boolean Connect();
     boolean reConnect();
     void WIFIsleep();
-    boolean WIFISend(byte r, byte c, boolean state);
+    void WIFISend(byte value, boolean state);
     boolean reset();
     int checkWiFly();
     char* getMAC();

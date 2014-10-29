@@ -173,6 +173,51 @@ byte remapSlim[4][8][8] =
 };
 
 
+byte remapMATRIX[4][8][8] = 
+{
+  {             // mapping matrix for Slim
+    {0,8,16,24,       32,40,48,56}, 
+    {1,9,17,25,       33,41,49,57}, 
+    {2,10,18,26,      34,42,50,58}, 
+    {3,11,19,27,      35,43,51,59}, 
+    {4,12,20,28,      36,44,52,60}, 
+    {5,13,21,29,      37,45,53,61}, 
+    {6,14,22,30,      38,46,54,62}, 
+    {7,15,23,31,      39,47,55,63}
+  },  
+  {             // mapping matrix for Slim
+    {7,6,5,4,              3,2,1,0}, 
+    {15,14,13,12,        11,10,9,8}, 
+    {23,22,21,20,      19,18,17,16}, 
+    {31,30,29,28,      27,26,25,24},
+    {39,38,37,36,      35,34,33,32}, 
+    {47,46,45,44,      43,42,41,40},
+    {55,54,53,52,      51,50,49,48},
+    {63,62,61,60,      59,58,57,56}
+  },
+  {             // mapping matrix for Slim
+    {63,55,47,39,       31,23,15,7}, 
+    {62,54,46,38,       30,22,14,6}, 
+    {61,53,45,37,       29,21,13,5}, 
+    {60,52,44,36,       28,20,12,4}, 
+    {59,51,43,35,       27,19,11,3}, 
+    {58,50,42,34,       26,18,10,2}, 
+    {57,49,41,33,        25,17,9,1}, 
+    {56,48,40,32,        24,16,8,0} 
+  },
+  {             // mapping matrix for Slim
+    {56,57,58,59,      60,61,62,63}, 
+    {48,49,50,51,      52,53,54,55}, 
+    {40,41,42,43,      44,45,46,47}, 
+    {32,32,34,35,      36,37,38,39}, 
+    {24,25,26,27,      28,29,30,31}, 
+    {16,17,18,19,      20,21,22,23}, 
+    {8,9,10,11,        12,13,14,15}, 
+    {0,1,2,3,              4,5,6,7} 
+  }
+};
+
+
 void Bhoreal::slaveSend(byte val) {
    Wire.beginTransmission(4); //start transmission to device 
    Wire.write(val);        // write value to write
@@ -383,27 +428,26 @@ void Bhoreal::startup(){
 //////////////////////  SERIAL PRESS & RELEASE  //////////////////////
 //////////////////////////////////////////////////////////////////////
 
-
+byte value_send = 0;
 void Bhoreal::on_press(byte r, byte c){
 
 #if SERIAL_DATA
   Serial.print(1);
   Serial.print(" ");
-  Serial.println( (r << 4) | c, HEX);
+  Serial.println( (r << 3) | c);
 #endif
   #if (MODEL == SLIM) || (MODEL == SLIMPRO)
-    MIDIEvent e1 = { 0x09, 0x90, ((r << 3) | c) , 64  };
+    value_send = remapMATRIX[GIR][c][r];
+    MIDIEvent e1 = { 0x09, 0x90, value_send , 64  };
     #if (MODEL == SLIMPRO)
       #if WIFI_SEND
-        WIFISend(r, c, 1);
+        WIFISend(value_send, 1);
       #endif
     #endif
-//    MIDIEvent e1 = {0x09, 0x90, ((c << 3) | r) , 64    };
   #else
     MIDIEvent e1 = { 0x09, 0x90, ((r << 2) | c) , 64  };
-//    MIDIEvent e1 = {0x09, 0x90, ((c << 2) | r) , 64    };
   #endif
-//  MIDIUSB.write(e1);
+  MIDIUSB.write(e1);
 
 }
 
@@ -412,22 +456,20 @@ void Bhoreal::on_release(byte r, byte c){
 #if SERIAL_DATA
   Serial.print(0);
   Serial.print(" ");
-  Serial.println( (r << 4) | c, HEX); 
+  Serial.println( (r << 3) | c); 
 #endif
   #if (MODEL == SLIM) || (MODEL == SLIMPRO)
-    //MIDIEvent e1 = { 0x09, 0x90, ((r << 3) | c) , 0  };
+    value_send = remapMATRIX[GIR][c][r];
+    MIDIEvent e1 = { 0x09, 0x90, value_send , 0  };
     #if (MODEL == SLIMPRO)
       #if WIFI_SEND
-        WIFISend(r, c, 0);
+        WIFISend(value_send, 0);
       #endif
     #endif
-//    MIDIEvent e1 = {0x08, 0x80, ((c << 3) | r) , 0    };
   #else
     MIDIEvent e1 = { 0x09, 0x90, ((r << 2) | c) , 0  };
-//    MIDIEvent e1 = {0x08, 0x80, ((c << 2) | r) , 0    };
   #endif
-
-//  MIDIUSB.write(e1);
+  MIDIUSB.write(e1);
 
 }
 
@@ -444,8 +486,6 @@ unsigned long time_button = 0;
 
 void Bhoreal::checkButtons(){
   #if (MODEL == SLIM) || (MODEL == SLIMPRO)
-//      if (mode == 0) checkMatrix();
-//      else if (mode == 1) programMode();
     switch (mode) {
       case 0:
         checkMatrix();
@@ -484,7 +524,6 @@ void Bhoreal::checkButtons(){
 }
 
 byte r[8] = {4, 5, 6, 7, 0, 1, 2, 3};
-boolean in_mat = 0;
 
 void Bhoreal::checkMatrix()
 {
@@ -672,16 +711,16 @@ void Bhoreal::checkADC(){
           else if (limity<2) GIR=1;
           else if (limity>5) GIR=3;
           
-          #if SERIAL_DATA
-            Serial.print("x= ");
-            Serial.print(x);
-            Serial.print(", ");
-            Serial.print("y= ");
-            Serial.print(y);
-            Serial.print(", ");
-            Serial.print("z= ");
-            Serial.println(z);
-          #endif
+//          #if SERIAL_DATA
+//            Serial.print("x= ");
+//            Serial.print(x);
+//            Serial.print(", ");
+//            Serial.print("y= ");
+//            Serial.print(y);
+//            Serial.print(", ");
+//            Serial.print("z= ");
+//            Serial.println(z);
+//          #endif
           
   #else
       // For all of the ADC's which are activated, check if the analog value has changed,
@@ -1021,6 +1060,7 @@ boolean Bhoreal::Connect()
       if(EnterCommandMode())
         {    
             SendCommand(F("set wlan join 1")); // Disable AP mode
+            SendCommand(F("set opt deviceid Bhoreal"));
             SendCommand(F("set ip dhcp 1")); // Enable DHCP server
             SendCommand(F("set comm time 5"));
             SendCommand(F("set ip flags 0x7"));
@@ -1233,9 +1273,12 @@ boolean Bhoreal::Connect()
     }
   }
 
-  boolean Bhoreal::WIFISend(byte r, byte c, boolean state)
+  
+  void Bhoreal::WIFISend(byte value, boolean state)
   {
-    Serial1.write((state<<7)|((r << 3) | c));
+    //byte val = (state<<7)|((r << 3) | c);
+    Serial1.write((state<<7)|value);
+    //Serial.write(val);
   }
 
 #endif
