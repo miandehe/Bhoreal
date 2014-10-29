@@ -798,10 +798,8 @@ ISR(TIMER1_OVF_vect)
   
 uint32_t Bhoreal::hue2rgb(uint16_t hueValue)
 {
-  if (hueValue<=127)
-    {
       hueValue<<= 3;  // 128 midi steps -> 1024 hue steps
-      
+
       if (hueValue < 341)  { // Lowest third of the potentiometer's range (0-340)
         hueValue = (hueValue * 3) / 4; // Normalize to 0-255
     
@@ -825,9 +823,6 @@ uint32_t Bhoreal::hue2rgb(uint16_t hueValue)
       }
       
       return ((uint32_t)rh << 16) | ((uint32_t)gh <<  8) | bh;
-   }
-  else return 0;
-
 }
 
 ///////////////////////////////////////////////////////////////
