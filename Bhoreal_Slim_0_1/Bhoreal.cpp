@@ -3,20 +3,21 @@
 #include <EEPROM.h>
 
 #if MODEL == SLIMPRO
-//  const char mySSID[] = "hangar_lab";  
-//  const char myPass[] = "labinteractius";
-//  const char *IP = "172.26.255.255";
-//  const char myAuth[] = WPA2;
+  const char mySSID[] = "hangar_lab";  
+  const char myPass[] = "labinteractius";
+  const char *IP = "172.26.255.255";
+  const char myAuth[] = WPA2;
 
   
-//  const char mySSID[] = "DI&L";  
-//  const char myPass[] = "vdossier";
-//  const char *IP = "172.26.0.255";
+//  const char mySSID[] = "hangar_oficines";  
+//  const char myPass[] = "m1cr0fug4s";
+//  const char *IP = "172.26.255.255";
+//  const char myAuth[] = WPA1;
   
-  const char mySSID[] = "Mi$Red";  
-  const char myPass[] = "FINALFANTASY";
-  const char *IP = "192.168.0.255";
-  const char myAuth[] = WPA2;
+//  const char mySSID[] = "Mi$Red";  
+//  const char myPass[] = "FINALFANTASY";
+//  const char *IP = "192.168.0.255";
+//  const char myAuth[] = WPA2;
   
   const int protocol = UDP;
   const char antenna[] = INT_ANT;
@@ -103,8 +104,8 @@ byte tempADC; //Temporary storage for comparison purposes
   Bhoreal Bhoreal_;
   uint8_t pixels[numBytes];
 //  uint32_t baud[3]={ 115200, 57600, 9600};
-  uint32_t baud[3]={9600, 57600, 115200};
-//  uint32_t baud[3]={57600, 9600, 115200};
+//  uint32_t baud[3]={9600, 57600, 115200};
+  uint32_t baud[3]={57600, 9600, 115200};
   
 boolean pressed[8][8] = {      // pushbottons states matrix
   {1,1,1,1,1,1,1,1},
@@ -908,6 +909,7 @@ boolean SendCommand(const char *command,
 
 #define COMMAND_MODE_GUARD_TIME 250 // in milliseconds
 
+
 boolean EnterCommandMode() {
     for (int retryCount = 0; retryCount < COMMAND_MODE_ENTER_RETRY_ATTEMPTS; retryCount++) 
      {
@@ -1020,10 +1022,10 @@ boolean Bhoreal::Connect()
         {    
             SendCommand(F("set wlan join 1")); // Disable AP mode
             SendCommand(F("set ip dhcp 1")); // Enable DHCP server
-            SendCommand(F("set comm time 0"));
+            SendCommand(F("set comm time 5"));
             SendCommand(F("set ip flags 0x7"));
-            SendCommand(F("set wlan rate 1"));
-            SendCommand(F("set comm size 1"));
+            SendCommand(F("set wlan rate 12"));
+            SendCommand(F("set comm size 1420"));
             SendCommand(F("set ip proto "), true);
             SendCommand(itoa(protocol));
             SendCommand(F("set ip host "), true);
@@ -1064,11 +1066,13 @@ boolean Bhoreal::Connect()
   }
   
   boolean Bhoreal::reset() {
-    EnterCommandMode();
-    SendCommand(F("factory R"), false, "Set Factory Defaults"); // Store settings
-    SendCommand(F("save"), false, "Storing in config"); // Store settings
-    SendCommand(F("reboot"), false, "*READY*");
-    Serial.println("Modulo reseteado");
+    if (EnterCommandMode())
+      {
+        SendCommand(F("factory R"), false, "Set Factory Defaults"); // Store settings
+        SendCommand(F("save"), false, "Storing in config"); // Store settings
+        SendCommand(F("reboot"), false, "*READY*");
+        Serial.println("Modulo reseteado");
+      }
   }
 
   int Bhoreal::checkWiFly() {
@@ -1205,13 +1209,15 @@ boolean Bhoreal::Connect()
   
   void Bhoreal::BaudSetup()
   {
+//    while (Serial1.available()) Serial1.read();
     if(!EnterCommandMode())
     {
+      Serial.println("Baudrate erroneo!!");
       boolean repair = true;
       for (int i=2; ((i>0)&&repair); i--)
       {
         Serial1.begin(baud[i]);
-        delay(500);
+        delay(1000);
         if(EnterCommandMode()) 
         {
           SendCommand(F("set u b "), true);
@@ -1331,7 +1337,7 @@ boolean Bhoreal::Connect()
         if ((millis()- time)>=1000) flagprog = true;
      }
      digitalWrite(MUX, HIGH);
-     Serial1.begin(9600);
+     Serial1.begin(baud[0]);
   }
 #endif
 ///////////////////////////////////////////////////////////////
