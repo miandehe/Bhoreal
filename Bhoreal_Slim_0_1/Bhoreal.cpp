@@ -8,16 +8,21 @@
 //  const char *IP = "172.26.255.255";
 //  const char myAuth[] = WPA2;
 
+  const char mySSID[] = "bhoreal";  
+  const char myPass[] = "";
+  const char *IP = "192.168.0.255";
+  const char myAuth[] = OPEN;
+  const char apmode = true;
   
 //  const char mySSID[] = "hangar_oficines";  
 //  const char myPass[] = "m1cr0fug4s";
 //  const char *IP = "172.26.255.255";
 //  const char myAuth[] = WPA1;
   
-  const char mySSID[] = "Mi$Red";  
-  const char myPass[] = "FINALFANTASY";
-  const char *IP = "192.168.0.255";
-  const char myAuth[] = WPA2;
+//  const char mySSID[] = "Mi$Red";  
+//  const char myPass[] = "FINALFANTASY";
+//  const char *IP = "192.168.0.255";
+//  const char myAuth[] = WPA2;
   
   const int protocol = UDP;
   const char antenna[] = INT_ANT;
@@ -1033,6 +1038,7 @@ boolean Bhoreal::awake() {
 
 boolean Ready()
 {
+  //if (apmode) return true;
   if (EnterCommandMode())
     {
       Serial1.println(F("join"));
@@ -1059,9 +1065,20 @@ boolean Bhoreal::Connect()
   {
       if(EnterCommandMode())
         {    
-            SendCommand(F("set wlan join 1")); // Disable AP mode
             SendCommand(F("set opt deviceid Bhoreal"));
-            SendCommand(F("set ip dhcp 1")); // Enable DHCP server
+            if (apmode) 
+              {
+                SendCommand(F("set wlan join 7")); // Enable AP mode
+                SendCommand(F("set ip dhcp 4")); // Turns DHCP off.
+                SendCommand(F("set ip address 192.168.0.8"));
+                SendCommand(F("set ip gateway 192.168.0.8"));
+                SendCommand(F("set ip net 255.255.255.0"));
+              }
+            else 
+              {
+                SendCommand(F("set wlan join 1")); // Disable AP mode
+                SendCommand(F("set ip dhcp 1")); // Turns DHCP on.
+              }
             SendCommand(F("set comm time 5"));
             SendCommand(F("set ip flags 0x7"));
             SendCommand(F("set wlan rate 12"));
@@ -1078,18 +1095,26 @@ boolean Bhoreal::Connect()
             SendCommand(F("set ftp mode 1"));
             SendCommand(F("set wlan auth "), true);
             SendCommand(myAuth);
-            boolean mode = true;
-            if ((myAuth==WEP)||(myAuth==WEP64)) mode=false;
             Serial.print(myAuth);
             SendCommand(F("set wlan ssid "), true);
             SendCommand(mySSID);
             Serial.print(F(" "));
             Serial.print(mySSID);
-            if (mode) SendCommand(F("set wlan phrase "), true);  // WPA1, WPA2, OPEN
-            else SendCommand(F("set wlan key "), true);
-            SendCommand(myPass);
-            Serial.print(F(" "));
-            Serial.print(myPass);
+            if ((myAuth==WPA1)||(myAuth==WPA2)) 
+              {
+                SendCommand(F("set wlan phrase "), true);  // WPA1, WPA2, OPEN
+                SendCommand(myPass);
+                Serial.print(F(" "));
+                Serial.print(myPass);
+                
+              }
+            else if ((myAuth==WEP)||(myAuth==WEP64)) 
+              {
+                SendCommand(F("set wlan key "), true);
+                SendCommand(myPass);
+                Serial.print(F(" "));
+                Serial.print(myPass);
+              }
             SendCommand(F("set wlan ext_antenna "), true);
             SendCommand(antenna);
             Serial.print(F(" "));
