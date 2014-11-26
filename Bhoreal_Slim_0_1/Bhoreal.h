@@ -4,38 +4,22 @@
 #include <avr/sleep.h>
 #include <avr/power.h>
 
-#define MINISLIM  0  //Tamaño de la matriz
-#define SLIM  1  //Tamaño de la matriz
-#define SLIMPRO  2  //Tamaño de la matriz
-
 #define  SERIAL_ENABLE     false
 #define  MIDI_DEBUG        false
 #define  SERIAL_DATA       false
 #define  DEMO_ACCEL        true
 #define  ENERGY_CONTROL    false
 #define  WIFI_SEND         true
+#define  APMode            false
+#define  ServerMode        true
+#define  wifiConfig        true
 
-#define OPEN  "0"
-#define WEP   "1"
-#define WPA1  "2"
-#define WPA2  "4"
-#define WEP64 "8"
-
-#define UDP  1
-#define TCP  2
-
-#define EXT_ANT "1" // antena externa
-#define INT_ANT "0" // antena interna
-
-#define WIFLY_LATEST_VERSION 441
-#define DEFAULT_WIFLY_FIRMWARE "ftp update wifly3-441.img"
-#define DEFAULT_WIFLY_FTP_UPDATE "set ftp address 198.175.253.161"
-
-#define EE_ADDR_TIME_VERSION                        0   //32BYTES 
-#define EE_ADDR_POWER                              32   //1BYTE 
 
 #define buffer_length        32
-static char buffer[buffer_length];
+
+#if ServerMode
+  #define  APMode          false
+#endif
 
 //#define  MODEL  MINISLIM //Modelo
 #define  MODEL  SLIMPRO //Modelo
@@ -66,8 +50,11 @@ class Bhoreal {
     byte slaveRead(byte reg);
     void sleep();
     void sleepNow();
+    void printChar(byte value, byte pos);
+    void printChar(char* text, byte color);
     
     //WIFI
+    boolean apMode();
     boolean Connect();
     boolean reConnect();
     void WIFIsleep();
@@ -79,8 +66,10 @@ class Bhoreal {
     int getWiFlyVersion();
     boolean update();
     void BaudSetup();
-    
+    boolean open(const char *addr, int port);
+    boolean close();
     void WIFIRead();
+    void checkServer();
     
     void timer1Initialize();
     void timer1SetPeriod(long microseconds);
@@ -90,6 +79,8 @@ class Bhoreal {
     
   private:
   
+    //Variables
+    char buffer[buffer_length];
     uint32_t endTime;                     // Latch timing reference
     const volatile uint8_t *port;         // Output PORT register
     uint8_t pinMask;                // Output PORT bitmask    
@@ -106,4 +97,7 @@ class Bhoreal {
     //Accelerometer
     void writeTo(int device, byte address, byte val);
     void readFrom(int device, byte address, int num, byte buff[]);
+    
+    //utils
+    char* itoa(int32_t number);
 };

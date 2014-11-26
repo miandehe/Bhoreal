@@ -1,116 +1,17 @@
 
 #include "bhoreal.h"
+#include "Constants.h"
 #include <EEPROM.h>
 
-#if MODEL == SLIMPRO
-//  const char mySSID[] = "hangar_lab";  
-//  const char myPass[] = "labinteractius";
-//  const char *IP = "172.26.255.255";
-//  const char myAuth[] = WPA2;
 
-  const char mySSID[] = "bhoreal";  
-  const char myPass[] = "";
-  const char *IP = "192.168.0.255";
-  const char myAuth[] = OPEN;
-  const char apmode = true;
-  
-//  const char mySSID[] = "hangar_oficines";  
-//  const char myPass[] = "m1cr0fug4s";
-//  const char *IP = "172.26.255.255";
-//  const char myAuth[] = WPA1;
-  
-//  const char mySSID[] = "Mi$Red";  
-//  const char myPass[] = "FINALFANTASY";
-//  const char *IP = "192.168.0.255";
-//  const char myAuth[] = WPA2;
-  
-  const int protocol = UDP;
-  const char antenna[] = INT_ANT;
-  const uint16_t outPort = 8000;
-  const uint16_t localPort = 9000;   
-  
-#endif
-
-#define MESSAGE_SIZE 36
-char OSC_SEND[MESSAGE_SIZE] = { // Message template
-  '/', 'b', 'h', 'o',
-  'r', 'e', 'a', 'l',
-  '/', 'p', 'r', 'e',   
-  's', 's',  B0,  B0,
-  ',', 'i', 'i', 'i', 
-  B0 , B0 ,  B0,  B0,
-  B0 , B0 ,  B0,  B0,
-  B0 , B0 ,  B0,  B0,
-  B0 , B0 ,  B0,  B0
-};
-
-byte tempR;
-byte tempC;
-byte lastread;
-byte command = 0;
-boolean ready = true;
-uint16_t IntensityMAX = 255;
-
-// Auxiliary analog output definitions
-#define ANALOG0 A5 // SLIDER POT MINI
-#define ANALOG1 A1
-boolean adc[2] = { // On or off state analog inputs
-  1, 0};
-byte analogval[2]; //The last reported value
-byte tempADC; //Temporary storage for comparison purposes
-
-  #if (MODEL == SLIM) || (MODEL == SLIMPRO)
-    // Pin definitions for the 74HC164 SIPO shift register (drives button rows high)
-    #define DATAPIN     9 // aka analog pin 2 (what, you didn't know that analog pins 0-5 are also digital pins 14-19? Well, now you do!)
-    #define CLOCKPIN    8
-    // Pin definitions for the 74HC165 PISO shift register (reads button column state)
-    #define INDATAPIN  13
-    #define INCLOCKPIN  5
-    #define INLOADPIN  10 // toggling this tell the 165 to read the value into its memory for reading
-    
-    #define VBAT  A0 
-    #define FACTORY  A5 
-    #define AWAKE  22 // AWAKE WIFLY
-    #define RST 11
-    #define MUX 12
-    #define BOT 7  // sleep pushbotom
-    #define POWER_VCC 4
-    
-    #define CHANNEL 3 //Channel for i2c
-    
-    //Accelerometer parameters
-    #define lim 512
-    #define DEVICE 0x53    //ADXL345 device address
-    #define TO_READ 6        //num of bytes we are going to read each time (two bytes for each axis)
-    int regAddress = 0x32;    //first axis-acceleration-data register on the ADXL345
-    
-    byte mode = 0;
-    
-    uint16_t MAX   =  8; 
-    int NUM_LEDS   =  64; 
-    const uint16_t numBytes = 192;
-    #define PIN_LED 6
-    
-    //Constant parameters
-    #define VCC_BATTERY 4618  //Voltage in mV
-    #define BAT_MIN 3300  //Voltage minimun
-    #define RESOLUTION 1023.  //Reslution for ADC
-  #else
-    uint16_t MAX   =  4; 
-    int NUM_LEDS   =  16;  
-    const uint16_t numBytes = 48;
-    #define PIN_LED 11
-    byte row[4]    = {         // ROW pins for matrix pushbottons 
-      13, 5, 10, 9};
-    byte column[4] = {         // COL pins for matrix pushbottons
-      8, 6, 12, 4};
-  #endif
-  
   Bhoreal Bhoreal_;
   uint8_t pixels[numBytes];
 //  uint32_t baud[3]={ 115200, 57600, 9600};
-//  uint32_t baud[3]={9600, 57600, 115200};
+#if ServerMode
+  uint32_t baud[3]={9600, 57600, 115200};
+#else
   uint32_t baud[3]={57600, 9600, 115200};
+#endif
   
 boolean pressed[8][8] = {      // pushbottons states matrix
   {1,1,1,1,1,1,1,1},
@@ -307,19 +208,30 @@ void Bhoreal::begin()
       #endif
         {
           awake();
-          config();
-          if (Connect()) 
-            {
-              Serial.println("Conectado!!");
-                int report = checkWiFly();
-                if (report == 1) Serial.println(F("Wifly Updated."));
-                else if (report == 2) Serial.println(F("Update Fail."));
-                else if (report == 0) Serial.println(F("WiFly up to date."));
-                else if (report == -1) Serial.println(F("Error reading the wifi version."));
-                Serial.print("MAC: "); Serial.println(getMAC()); 
-                Serial.print("IP: "); Serial.println(getIP()); 
-            }
-          else Serial.println("Desconectado :(");
+          #if wifiConfig
+            config();
+            #if APMode
+              if (apMode())
+                {
+                  Serial.print("MAC: "); Serial.println(getMAC()); 
+                  Serial.print("IP: "); Serial.println(getIP()); 
+                }
+              else Serial.println("Desconectado :(");
+            #else
+            if (Connect()) 
+              {
+                Serial.println("Conectado!!");
+                  int report = checkWiFly();
+                  if (report == 1) Serial.println(F("Wifly Updated."));
+                  else if (report == 2) Serial.println(F("Update Fail."));
+                  else if (report == 0) Serial.println(F("WiFly up to date."));
+                  else if (report == -1) Serial.println(F("Error reading the wifi version."));
+                  Serial.print("MAC: "); Serial.println(getMAC()); 
+                  Serial.print("IP: "); Serial.println(getIP()); 
+              }
+            else Serial.println("Desconectado :(");
+            #endif
+          #endif
         }
       else 
         {
@@ -363,7 +275,11 @@ void Bhoreal::config(){
     reset();
     delay(1000);
     BaudSetup();
-    reConnect();
+    #if APMode
+       apMode();
+    #else
+      reConnect();
+    #endif
   }
 }
 
@@ -484,48 +400,50 @@ void Bhoreal::on_release(byte r, byte c){
 //////////////////////   CHECK BUTTONS   //////////////////////
 ///////////////////////////////////////////////////////////////
 
-
 byte count_column = 0;
 byte count_file = 0;
 unsigned long time_button = 0;
 
 void Bhoreal::checkButtons(){
-  #if (MODEL == SLIM) || (MODEL == SLIMPRO)
-    switch (mode) {
-      case 0:
-        checkMatrix();
-        break;
-      case 1:
-        programMode();
-        break;
-      case 2:
-        demoAccel();
-        break;
-      case 3:
-        white();
-        break;
-      }
-  #else
-    if ((millis()-time_button)>1)
-      {
-        time_button = millis();
-        for(int r= MAX - 1; r >= 0; r--)
-        {
-          if(pressed[count_column][r] != digitalRead(column[r]))
-          { // read the state
-            //delay(1); // to prevent bounces!!!
-            pressed[count_column][r] = digitalRead(column[r]);
-            if(pressed[count_column][r]) on_press(count_column, r);
-            else on_release(count_column, r);
-          }
+    #if (MODEL == SLIM) || (MODEL == SLIMPRO)
+      switch (mode) {
+        case 0:
+          checkMatrix();
+          break;
+        case 1:
+          programMode();
+          break;
+        case 2:
+          demoAccel();
+          break;
+        case 3:
+          white();
+          break;
+        case 4:
+          checkServer();
+          break;
         }
-        digitalWrite(row[count_column],LOW);
-        count_column++;
-        if (count_column>MAX) count_column=0;
-        digitalWrite(row[count_column],HIGH);
-        
-      }
-  #endif
+    #else
+      if ((millis()-time_button)>1)
+        {
+          time_button = millis();
+          for(int r= MAX - 1; r >= 0; r--)
+          {
+            if(pressed[count_column][r] != digitalRead(column[r]))
+            { // read the state
+              //delay(1); // to prevent bounces!!!
+              pressed[count_column][r] = digitalRead(column[r]);
+              if(pressed[count_column][r]) on_press(count_column, r);
+              else on_release(count_column, r);
+            }
+          }
+          digitalWrite(row[count_column],LOW);
+          count_column++;
+          if (count_column>MAX) count_column=0;
+          digitalWrite(row[count_column],HIGH);
+          
+        }
+    #endif
 }
 
 byte r[8] = {4, 5, 6, 7, 0, 1, 2, 3};
@@ -567,16 +485,14 @@ void Bhoreal::checkMatrix()
 ////////////////////////////////////////////////////////////////
 //////////////////////    REFRESH LED     //////////////////////
 ////////////////////////////////////////////////////////////////
-
 byte refresh_led = 0;
 unsigned long time_led = 0;
-
 void Bhoreal::refresh(){ 
-      if (((refresh_led>0)&&((millis()-time_led)>1))||(refresh_led>=NUM_LEDS)||((refresh_led<NUM_LEDS)&&((millis()-time_led)>25))&&(refresh_led>0))
-        {
-          refresh_led=0;
-          show();
-        }
+  if (((refresh_led>0)&&((millis()-time_led)>1))||(refresh_led>=NUM_LEDS)||((refresh_led<NUM_LEDS)&&((millis()-time_led)>25))&&(refresh_led>0))
+    {
+      refresh_led=0;
+      show();
+    }
 }
 
 
@@ -585,73 +501,73 @@ void Bhoreal::refresh(){
 ////////////////////// REFRESH MIDI & LED  /////////////////////
 ////////////////////////////////////////////////////////////////
 
-void Bhoreal::midiRefresh(){ 
-  while(MIDIUSB.available() > 0) 
-  {
-    MIDIEvent e;
-    e = MIDIUSB.read();
-
-#if SERIAL_ENABLE
-    if(MIDI_DEBUG)
-    {
-      if(e.type != 0x0F) // timestamp 1 BYTE
+  void Bhoreal::midiRefresh(){ 
+      while(MIDIUSB.available() > 0) 
       {
-        Serial.print("Midi Packet: ");
-        Serial.print(e.type);
-        Serial.print("\t");
-        Serial.print(e.m1);
-        Serial.print("\t");
-        Serial.print(e.m2);
-        Serial.print("\t");
-        Serial.println(e.m3);
-      }
-    }
-#endif
-#if (MODEL == SLIM) || (MODEL == SLIMPRO)
-    if((e.type == 0x09) && (e.m3))  // NoteON midi message with vel > 0
-    {  
-      uint32_t c = hue2rgb(e.m3);  // velocity is used to HUE color selection and HUE is converted to RGB uint32 
-      uint8_t
-        r = (uint8_t)(c >> 16),
-        g = (uint8_t)(c >>  8),
-        b = (uint8_t)c;
-
-      setPixelColor(remapSlim[GIR][e.m2>>3][e.m2%8], r, g, b);
-      refresh_led++;
-      time_led = millis();
-      //refresh();
-    }
-    else if( (e.type == 0x08) || ((e.type == 0x09) && !e.m3) ) // NoteOFF midi message
-    {  
-      setPixelColor(remapSlim[GIR][e.m2>>3][e.m2%8], 0, 0, 0);
-      refresh_led++;
-      time_led = millis();
-      //refresh();
-    }  
-#else
-    if((e.type == 0x09) && (e.m3))  //  NoteON midi message with vel > 0
-    {  
-      uint32_t c = hue2rgb(e.m3);
-      uint8_t
-        r = (uint8_t)(c >> 16),
-        g = (uint8_t)(c >>  8),
-        b = (uint8_t)c;
-
-      setPixelColor(remapMini[e.m2>>2][e.m2%4], r, g, b);
-      refresh_led++;
-      time_led = millis();
-    }
-    else if( (e.type == 0x08) || ((e.type == 0x09) && !e.m3) ) // NoteOFF midi message
-    {  
-      setPixelColor(remapMini[e.m2>>2][e.m2%4], 0, 0, 0);
-      refresh_led++;
-      time_led = millis();
-    }
-#endif
-    MIDIUSB.flush(); // delete it???
-  
+        MIDIEvent e;
+        e = MIDIUSB.read();
+        #if SERIAL_ENABLE
+            if(MIDI_DEBUG)
+            {
+              if(e.type != 0x0F) // timestamp 1 BYTE
+              {
+                Serial.print("Midi Packet: ");
+                Serial.print(e.type);
+                Serial.print("\t");
+                Serial.print(e.m1);
+                Serial.print("\t");
+                Serial.print(e.m2);
+                Serial.print("\t");
+                Serial.println(e.m3);
+              }
+            }
+        #endif
+        #if (MODEL == SLIM) || (MODEL == SLIMPRO)
+            if((e.type == 0x09) && (e.m3))  // NoteON midi message with vel > 0
+            {  
+              uint32_t c = hue2rgb(e.m3);  // velocity is used to HUE color selection and HUE is converted to RGB uint32 
+              uint8_t
+                r = (uint8_t)(c >> 16),
+                g = (uint8_t)(c >>  8),
+                b = (uint8_t)c;
+        
+              setPixelColor(remapSlim[GIR][e.m2>>3][e.m2%8], r, g, b);
+              refresh_led++;
+              time_led = millis();
+              //refresh();
+            }
+            else if( (e.type == 0x08) || ((e.type == 0x09) && !e.m3) ) // NoteOFF midi message
+            {  
+              setPixelColor(remapSlim[GIR][e.m2>>3][e.m2%8], 0, 0, 0);
+              refresh_led++;
+              time_led = millis();
+              //refresh();
+            }  
+        #else
+            if((e.type == 0x09) && (e.m3))  //  NoteON midi message with vel > 0
+            {  
+              uint32_t c = hue2rgb(e.m3);
+              uint8_t
+                r = (uint8_t)(c >> 16),
+                g = (uint8_t)(c >>  8),
+                b = (uint8_t)c;
+        
+              setPixelColor(remapMini[e.m2>>2][e.m2%4], r, g, b);
+              refresh_led++;
+              time_led = millis();
+            }
+            else if( (e.type == 0x08) || ((e.type == 0x09) && !e.m3) ) // NoteOFF midi message
+            {  
+              setPixelColor(remapMini[e.m2>>2][e.m2%4], 0, 0, 0);
+              refresh_led++;
+              time_led = millis();
+            }
+        #endif
+            MIDIUSB.flush(); // delete it???
+          
+          }
   }
-}
+
 
 ////////////////////////////////////////////////////////////////
 //////////////////////  CHECK ADC INPUTS  //////////////////////
@@ -697,67 +613,55 @@ void Bhoreal::midiRefresh(){
 #endif
 
 void Bhoreal::checkADC(){
-  
-  #if (MODEL == SLIM) || (MODEL == SLIMPRO)   
-          checkBattery();
-          readFrom(DEVICE, regAddress, TO_READ, buff); //read the acceleration data from the ADXL345
-          x = (((int)buff[1]) << 8) | buff[0]; 
-          x = map(x,-lim,lim,0,1023);  
-          y = (((int)buff[3])<< 8) | buff[2];
-          y = map(y,-lim,lim,0,1023); 
-          z = (((int)buff[5]) << 8) | buff[4];
-          z = map(z,-lim,lim,0,1023); 
-          int limitx = map(x, 448, 575, 7, 0);
-          if (limitx==0) limitx =1;
-          int limity = map(y, 448, 575, 0, 7);
-          if (limity==7) limity=6;
-          if (limitx<2) GIR=2;
-          else if (limitx>5) GIR=0;
-          else if (limity<2) GIR=1;
-          else if (limity>5) GIR=3;
-          
-//          #if SERIAL_DATA
-//            Serial.print("x= ");
-//            Serial.print(x);
-//            Serial.print(", ");
-//            Serial.print("y= ");
-//            Serial.print(y);
-//            Serial.print(", ");
-//            Serial.print("z= ");
-//            Serial.println(z);
-//          #endif
-          
-  #else
-      // For all of the ADC's which are activated, check if the analog value has changed,
-      // and send a message if it has.
-      if(adc[0]){
-        tempADC = (analogRead(ANALOG0) >> 2);
-        if(abs((int)analogval[0] - (int)tempADC) > 2 ){
-        //if(analogval[0] != (analogRead(ANALOG0) >> 2)){
-          //analogval[0] = (analogRead(ANALOG0) >> 2);
-          analogval[0] = tempADC;
-    #if SERIAL_DATA
-          Serial.write(14 << 4);
-          Serial.write(analogval[0]);
-    #endif
-          // Send the control change message for the slider potentiometer,
-          // by defect we use CC64 controller
-          MIDIEvent e1 = {0x0B, 0xB0, 64, analogval[0]>>1};
-          MIDIUSB.write(e1);
+    #if (MODEL == SLIM) || (MODEL == SLIMPRO)   
+            checkBattery();
+            readFrom(DEVICE, regAddress, TO_READ, buff); //read the acceleration data from the ADXL345
+            x = (((int)buff[1]) << 8) | buff[0]; 
+            x = map(x,-lim,lim,0,1023);  
+            y = (((int)buff[3])<< 8) | buff[2];
+            y = map(y,-lim,lim,0,1023); 
+            z = (((int)buff[5]) << 8) | buff[4];
+            z = map(z,-lim,lim,0,1023); 
+            int limitx = map(x, 448, 575, 7, 0);
+            if (limitx==0) limitx =1;
+            int limity = map(y, 448, 575, 0, 7);
+            if (limity==7) limity=6;
+            if (limitx<2) GIR=2;
+            else if (limitx>5) GIR=0;
+            else if (limity<2) GIR=1;
+            else if (limity>5) GIR=3;  
+    #else
+        // For all of the ADC's which are activated, check if the analog value has changed,
+        // and send a message if it has.
+        if(adc[0]){
+          tempADC = (analogRead(ANALOG0) >> 2);
+          if(abs((int)analogval[0] - (int)tempADC) > 2 ){
+          //if(analogval[0] != (analogRead(ANALOG0) >> 2)){
+            //analogval[0] = (analogRead(ANALOG0) >> 2);
+            analogval[0] = tempADC;
+      #if SERIAL_DATA
+            Serial.write(14 << 4);
+            Serial.write(analogval[0]);
+      #endif
+            // Send the control change message for the slider potentiometer,
+            // by defect we use CC64 controller
+            MIDIEvent e1 = {0x0B, 0xB0, 64, analogval[0]>>1};
+            MIDIUSB.write(e1);
+          }
         }
-      }
-      
-      if(adc[1]){
-        if(analogval[1] != (analogRead(ANALOG1) >> 2)){
-          analogval[1] = (analogRead(ANALOG1) >> 2);
-    #if SERIAL_DATA
-          Serial.write(14 << 4 | 1);
-          Serial.write(analogval[1]);
-    #endif
+        
+        if(adc[1]){
+          if(analogval[1] != (analogRead(ANALOG1) >> 2)){
+            analogval[1] = (analogRead(ANALOG1) >> 2);
+      #if SERIAL_DATA
+            Serial.write(14 << 4 | 1);
+            Serial.write(analogval[1]);
+      #endif
+          }
         }
-      }
-  #endif
+    #endif
 }
+
 
 #if (MODEL == SLIM) || (MODEL == SLIMPRO)
   boolean charge_state = false;
@@ -913,7 +817,7 @@ boolean SendCommand(const __FlashStringHelper *command,
                                  boolean isMultipartCommand = false,
                                  const char *expectedResponse = "AOK") {
   Serial1.print(command);
-  delay(20);
+  //delay(20);
   if (!isMultipartCommand) {
     Serial1.flush();
     Serial1.println();
@@ -933,7 +837,7 @@ boolean SendCommand(const char *command,
                                  boolean isMultipartCommand = false,
                                  const char *expectedResponse = "AOK") {
   Serial1.print(command);
-  delay(20);
+  //delay(20);
   if (!isMultipartCommand) {
     Serial1.flush();
     Serial1.println();
@@ -962,7 +866,7 @@ boolean EnterCommandMode() {
       delay(COMMAND_MODE_GUARD_TIME);
       Serial1.println();
       Serial1.println();
-      if (FindInResponse("\r\n<", 1000))
+      if (FindInResponse("\r\n<", 100))
       {
         return true;
       }
@@ -999,7 +903,7 @@ void Bhoreal::WIFIsleep() {
       SendCommand(F("sleep"));
 }
 
-char* itoa(int32_t number)
+char* Bhoreal::itoa(int32_t number)
   {
    byte count = 0;
    uint32_t temp;
@@ -1060,25 +964,73 @@ boolean Bhoreal::Connect()
     }
      else return true;  
   }
- 
-  boolean Bhoreal::reConnect()
+
+
+  
+boolean Bhoreal::apMode()
   {
       if(EnterCommandMode())
         {    
             SendCommand(F("set opt deviceid Bhoreal"));
-            if (apmode) 
+            SendCommand(F("set wlan join 7")); // Enable AP mode
+            SendCommand(F("set ip dhcp 4")); // Turns DHCP off.
+            SendCommand(F("set ip address 192.168.0.8"));
+            SendCommand(F("set ip gateway 192.168.0.8"));
+            SendCommand(F("set ip net 255.255.255.0"));
+            SendCommand(F("set comm time 5"));
+            SendCommand(F("set ip flags 0x7"));
+            SendCommand(F("set wlan rate 12"));
+            SendCommand(F("set comm size 1420"));
+            SendCommand(F("set ip proto "), true);
+            SendCommand(itoa(protocol));
+            SendCommand(F("set ip host "), true);
+            SendCommand(IPAP);
+            SendCommand(F("set ip localport "), true);
+            SendCommand(itoa(localPort));
+            SendCommand(F("set ip remote "), true);
+            SendCommand(itoa(outPort));
+            SendCommand(F(DEFAULT_WIFLY_FTP_UPDATE)); //ftp server update
+            SendCommand(F("set ftp mode 1"));
+            SendCommand(F("set wlan auth "), true);
+            SendCommand(itoa(myAuthAP));
+            Serial.print(myAuthAP);
+            SendCommand(F("set wlan ssid "), true);
+            SendCommand(mySSIDAP);
+            Serial.print(F(" "));
+            Serial.print(mySSIDAP);
+            if ((myAuthAP==WPA1)||(myAuthAP==WPA2)) 
               {
-                SendCommand(F("set wlan join 7")); // Enable AP mode
-                SendCommand(F("set ip dhcp 4")); // Turns DHCP off.
-                SendCommand(F("set ip address 192.168.0.8"));
-                SendCommand(F("set ip gateway 192.168.0.8"));
-                SendCommand(F("set ip net 255.255.255.0"));
+                SendCommand(F("set wlan phrase "), true);  // WPA1, WPA2, OPEN
+                SendCommand(myPassAP);
+                Serial.print(F(" "));
+                Serial.print(myPassAP);
+                
               }
-            else 
+            else if ((myAuthAP==WEP)||(myAuthAP==WEP64)) 
               {
-                SendCommand(F("set wlan join 1")); // Disable AP mode
-                SendCommand(F("set ip dhcp 1")); // Turns DHCP on.
+                SendCommand(F("set wlan key "), true);
+                SendCommand(myPassAP);
+                Serial.print(F(" "));
+                Serial.print(myPassAP);
               }
+            SendCommand(F("set wlan ext_antenna "), true);
+            SendCommand(antenna);
+            Serial.print(F(" "));
+            Serial.println(antenna);
+            SendCommand(F("save"), false, "Storing in config"); // Store settings
+            SendCommand(F("reboot"), false, "*READY*");
+            return true;
+        }
+        return false;   
+  }
+  
+boolean Bhoreal::reConnect()
+  {
+      if(EnterCommandMode())
+        {    
+            SendCommand(F("set opt deviceid Bhoreal"));
+            SendCommand(F("set wlan join 1")); // Disable AP mode
+            SendCommand(F("set ip dhcp 1")); // Turns DHCP on.
             SendCommand(F("set comm time 5"));
             SendCommand(F("set ip flags 0x7"));
             SendCommand(F("set wlan rate 12"));
@@ -1094,30 +1046,32 @@ boolean Bhoreal::Connect()
             SendCommand(F(DEFAULT_WIFLY_FTP_UPDATE)); //ftp server update
             SendCommand(F("set ftp mode 1"));
             SendCommand(F("set wlan auth "), true);
-            SendCommand(myAuth);
-            Serial.print(myAuth);
+            SendCommand(itoa(myAuth));
+            Serial.print(F("AUTH: "));
+            Serial.println(myAuth);
             SendCommand(F("set wlan ssid "), true);
             SendCommand(mySSID);
-            Serial.print(F(" "));
-            Serial.print(mySSID);
-            if ((myAuth==WPA1)||(myAuth==WPA2)) 
+            Serial.print(F("SSID: "));
+            Serial.println(mySSID);
+            if ((myAuth==WPA1)||(myAuth==WPA2)||(myAuth==MIXED)) 
               {
-                SendCommand(F("set wlan phrase "), true);  // WPA1, WPA2, OPEN
+                SendCommand(F("set wlan phrase "), true);  // WPA1, WPA2, MIXED
                 SendCommand(myPass);
-                Serial.print(F(" "));
-                Serial.print(myPass);
+                
+                Serial.print(F("PASS: "));
+                Serial.println(myPass);
                 
               }
             else if ((myAuth==WEP)||(myAuth==WEP64)) 
               {
                 SendCommand(F("set wlan key "), true);
                 SendCommand(myPass);
-                Serial.print(F(" "));
-                Serial.print(myPass);
+                Serial.print(F("PASS: "));
+                Serial.println(myPass);
               }
             SendCommand(F("set wlan ext_antenna "), true);
             SendCommand(antenna);
-            Serial.print(F(" "));
+            Serial.print(F("ANTENNA: "));
             Serial.println(antenna);
             SendCommand(F("save"), false, "Storing in config"); // Store settings
             SendCommand(F("reboot"), false, "*READY*");
@@ -1306,6 +1260,42 @@ boolean Bhoreal::Connect()
     //Serial.write(val);
   }
 
+  boolean connected = false;
+
+  boolean Bhoreal::open(const char *addr, int port) {
+  
+    if (connected) {
+      close();
+    } 
+    if (EnterCommandMode())
+    {
+      SendCommand(F("open "), true);
+      SendCommand(addr, true);
+      Serial1.print(F(" "));
+      Serial1.print(port);
+      if (SendCommand("", false, "*OPEN*")) 
+      {
+        connected = true;
+        return true;
+      }
+      else return false;
+    }
+    EnterCommandMode();
+    return false;
+  }
+  
+  boolean Bhoreal::close() {
+    if (!connected) {
+      return true;
+    }
+    if (SendCommand(F("close"), false, "*CLOS*")) {
+      connected = false;
+      return true;
+    }
+    connected = false;
+    return false;
+  }
+
 #endif
 
 ///////////////////////////////////////////////////////////////
@@ -1352,7 +1342,7 @@ boolean Bhoreal::Connect()
    if ((millis()-time_mode)>500)
      {
        mode++;
-       if (mode > 3) mode = 0;
+       if (mode > 4) mode = 0;
        time_mode = millis();
      }
   }
@@ -1362,87 +1352,126 @@ boolean Bhoreal::Connect()
   ///////////////////////////////////////////////////////////////    
   
   #if (MODEL == SLIM) || (MODEL == SLIMPRO)
-  void Bhoreal::programMode()
-  {
-    unsigned long time = 0;
-    boolean flagprog = false;
-    Serial1.begin(57600);
-    digitalWrite(MUX, LOW);
-    for(int x = 0; x < NUM_LEDS; ++x) setPixelColor(x, 0, 0, 0);
-    setPixelColor(0, 255, 0, 0);
-    show();
-    int limit_ant = 0;
-    int limit = 1;
-    while (mode==1)
-      {
-        #if (MODEL == SLIMPRO)
-         float charge = readBattery();
-         limit = map(charge, 3000, 4200, 0, 7);
-         if (limit!=limit_ant)
-          {
-            for(int x = 0; x <=limit; ++x) setPixelColor(x, 255, 0, 0);
-            if (limit>=3) for(int x = 3; x <=limit; ++x) setPixelColor(x, 0, 0, 255);
-            if (limit>=6) for(int x = 6; x <=limit; ++x) setPixelColor(x, 0, 255, 0);
-            show();
-            limit_ant = limit;
-          }
-        #endif
-         if (Serial.available())
-          {
-            if (flagprog)
+    void Bhoreal::programMode()
+    {
+      unsigned long time = 0;
+      boolean flagprog = false;
+      Serial1.begin(57600);
+      digitalWrite(MUX, LOW);
+      for(int x = 0; x < NUM_LEDS; ++x) setPixelColor(x, 0, 0, 0);
+      setPixelColor(0, 255, 0, 0);
+      show();
+      int limit_ant = 0;
+      int limit = 1;
+      timer1Stop();
+      while (mode==1)
+        {
+          #if (MODEL == SLIMPRO)
+           float charge = readBattery();
+           limit = map(charge, 3000, 4200, 0, 7);
+           if (limit!=limit_ant)
             {
-              digitalWrite(RST, LOW);
-              delay(1);
-              digitalWrite(RST, HIGH);
-              flagprog = false;
+              for(int x = 0; x <=limit; ++x) setPixelColor(x, 255, 0, 0);
+              if (limit>=3) for(int x = 3; x <=limit; ++x) setPixelColor(x, 0, 0, 255);
+              if (limit>=6) for(int x = 6; x <=limit; ++x) setPixelColor(x, 0, 255, 0);
+              show();
+              limit_ant = limit;
             }
-            Serial1.write(Serial.read());
-  
-            time = millis();
-          }
-        if (Serial1.available())
-          Serial.write(Serial1.read());
-        if ((millis()- time)>=1000) flagprog = true;
-     }
-     digitalWrite(MUX, HIGH);
-     Serial1.begin(baud[0]);
-  }
-#endif
+          #endif
+           if (Serial.available())
+            {
+              if (flagprog)
+              {
+                digitalWrite(RST, LOW);
+                delay(1);
+                digitalWrite(RST, HIGH);
+                flagprog = false;
+              }
+              Serial1.write(Serial.read());
+    
+              time = millis();
+            }
+          if (Serial1.available())
+            Serial.write(Serial1.read());
+          if ((millis()- time)>=1000) flagprog = true;
+       }
+       digitalWrite(MUX, HIGH);
+       timer1Initialize();
+       Serial1.begin(baud[0]);
+    }
+  #endif
 ///////////////////////////////////////////////////////////////
 //////////////////////       Demo        //////////////////////
 ///////////////////////////////////////////////////////////////  
 
 void Bhoreal::demoAccel()
-{          
-  for (int i=0; i<8; i++) 
+{  
+  timer1Stop(); 
+  while (mode==2)
     {
-      for (int j=0; j<8; j++)  
+      for (int i=0; i<8; i++) 
         {
-          setPixelColor(remapSlim[GIR][i][j], 0, 0, 255);
-        }
-    } 
-  int limitx = map(x, 448, 575, 7, 0);
-  if (limitx==0) limitx =1;
-  int limity = map(y, 448, 575, 0, 7);
-  if (limity==7) limity=6;
-  setPixelColor(remapSlim[0][limitx][limity], 255, 0, 0);
-  setPixelColor(remapSlim[0][limitx-1][limity], 255, 0, 0);
-  setPixelColor(remapSlim[0][limitx][limity+1], 255, 0, 0);
-  setPixelColor(remapSlim[0][limitx-1][limity+1], 255, 0, 0);
-  show();
+          for (int j=0; j<8; j++)  
+            {
+              setPixelColor(remapSlim[GIR][i][j], 0, 0, 255);
+            }
+        } 
+      int limitx = map(x, 448, 575, 7, 0);
+      if (limitx==0) limitx =1;
+      int limity = map(y, 448, 575, 0, 7);
+      if (limity==7) limity=6;
+      setPixelColor(remapSlim[0][limitx][limity], 255, 0, 0);
+      setPixelColor(remapSlim[0][limitx-1][limity], 255, 0, 0);
+      setPixelColor(remapSlim[0][limitx][limity+1], 255, 0, 0);
+      setPixelColor(remapSlim[0][limitx-1][limity+1], 255, 0, 0);
+      show();
+   }
+   timer1Initialize();
 }
 
 #endif
 
 void Bhoreal::white()
-{          
-  for(int x = 0; x < NUM_LEDS; ++x) setPixelColor(x, 255, 255, 255);
-  show();  
+{ 
+  timer1Stop(); 
+  while (mode==3)
+    {
+      for(int x = 0; x < NUM_LEDS; ++x) setPixelColor(x, 255, 255, 255);
+      show();  
+    }
+  timer1Initialize();
 }
 
+void Bhoreal::printChar(byte value, byte pos)
+{
+  for (int i=0; i<8; i++)
+    {
+      for (int j=0; j<8; j++)
+        {
+          byte temp = (character[value][j]>>(7-i))&0x01;
+          setPixelColor(remapSlim[GIR][j][i],temp*255, 0, 0);
+        }
+    }
+    show();
+}
 
-
-
+void Bhoreal::printChar(char* text, byte color)
+{
+  uint32_t c = hue2rgb(color);  // 128 HUE steps / 64 leds, 2 steps x led
+  uint8_t r = (uint8_t)(c >> 16);
+  uint8_t g = (uint8_t)(c >>  8);
+  uint8_t b = (uint8_t)c;
+  
+  for (int i=0; i<8; i++)
+    {
+      for (int j=0; j<8; j++)
+        {
+          byte temp = (text[j]>>(7-i))&0x01;
+          setPixelColor(remapSlim[GIR][j][i],temp*r, temp*g, temp*b);
+        }
+    }
+    show();
+}
 
 
 ///////////////////////////////////////////////////////////////
@@ -1640,5 +1669,52 @@ void Bhoreal::setPixelColor(
   }
 #endif
 
+char icon[8] = {0,0,0,0,0,0,0,0};
 
+void Bhoreal::checkServer() {
+  timer1Stop();
+  while (mode==4)
+    {
+      boolean ok=false;
+      uint8_t count = 0;
+      byte retry=0;
+      while (retry<5)
+      {
+       retry++;
+       if (EnterCommandMode()) 
+        {
+          if (open(WEB[0], 80))
+           {
+             for(byte i = 1; i<4; i++) Serial1.print(WEB[i]); //Requests to the server time
+             //if (FindInResponse("\r\n\r\n", 1000)) 
+             if (FindInResponse("icon:", 1000)) 
+               {
+                    byte offset = 0;
+                    unsigned long time = millis();
+                    while (offset < 8) {
+                      if (Serial1.available())
+                      {
+                        icon[offset] = Serial1.read();
+                        time = millis();
+    //                    Serial.println(icon[offset], BIN);
+                        ok = true;
+                        offset++;
+                      }
+                      else if((millis()-time)>1000)
+                      {
+                        ok = false;
+                        break; 
+                      }
+                    }
+                   
+                   break;
+                 }
+             close();
+           }
+        }
+      }
+      if (ok) printChar(icon, random(1, 127));
+    }
+  timer1Initialize();
+}
 

@@ -1,4 +1,4 @@
-///////////////////////////////////////////////////////
+//
 // BHOREAL SLIM / MINI BETA FIRMWARE v0.1            //
 // Programmed by M. A. de Heras y A. Posada          //
 // Thanks to Adafruit for the great library Neopixel //
@@ -19,7 +19,7 @@ void setup() {
 }
   
 void loop () {
-  // Turn on the lights
+ 
   Bhoreal.midiRefresh();
   // Check the button states
   Bhoreal.checkButtons();
@@ -27,8 +27,6 @@ void loop () {
   Bhoreal.checkADC();
   
   Bhoreal.refresh();
-  
-  //Bhoreal.WIFIRead();
 
 }
 
