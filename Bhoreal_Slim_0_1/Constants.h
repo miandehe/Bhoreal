@@ -39,20 +39,20 @@ WIFLY Firmware Setting
 //  const char *IP = "192.168.0.255";
 //  const byte myAuth = WPA2;
   
-  const char mySSID[] = "hangar_lab";  
-  const char myPass[] = "labinteractius";
-  const char *IP = "172.26.255.255";
-  const byte myAuth = WPA2;
+//  const char mySSID[] = "hangar_lab";  
+//  const char myPass[] = "labinteractius";
+//  const char *IP = "172.26.255.255";
+//  const byte myAuth = WPA2;
   
 //  const char mySSID[] = "hangar_oficines";  
 //  const char myPass[] = "m1cr0fug4s";
 //  const char *IP = "172.26.255.255";
 //  const byte myAuth = WPA2;
   
-//  const char mySSID[] = "Mi$Red";  
-//  const char myPass[] = "FINALFANTASY";
-//  const char *IP = "192.168.0.255";
-//  const byte myAuth = WPA2;
+  const char mySSID[] = "Mi$Red";  
+  const char myPass[] = "FINALFANTASY";
+  const char *IP = "192.168.0.255";
+  const byte myAuth = WPA2;
   
   const char mySSIDAP[] = "bhoreal";  
   const char myPassAP[] = "";

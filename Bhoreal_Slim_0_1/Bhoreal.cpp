@@ -414,7 +414,7 @@ void Bhoreal::checkButtons(){
           selectMode();
           break;
         case 1:
-          checkMatrix();
+          checkMatrix(true);
           break;
         case 2:
           programMode();
@@ -454,7 +454,9 @@ void Bhoreal::checkButtons(){
 
 byte r[8] = {4, 5, 6, 7, 0, 1, 2, 3};
 
-void Bhoreal::checkMatrix()
+int mode_ant = mode - 1;
+  
+void Bhoreal::checkMatrix(boolean Send)
 {
    PORTB &= B11101111; //digitalWrite(CLOCKPIN,LOW);
    PORTB |= B00100000; //digitalWrite(DATAPIN, HIGH); 
@@ -473,10 +475,16 @@ void Bhoreal::checkMatrix()
         if(pressed[c][r[i]] != PINC>>7){ //digitalRead(INDATAPIN)){ // read the state
           pressed[c][r[i]] = PINC>>7; //digitalRead(INDATAPIN);
           if(!pressed[c][r[i]]){
-            on_press(c, r[i]);
+            if (Send) on_press(c, r[i]);
+            else
+             {
+               mode_ant = c + r[i]*8; 
+//               Serial.print(' '); 
+//               Serial.println(r[i]); 
+             }
           }
           else {
-            on_release(c, r[i]);
+            if (Send) on_release(c, r[i]);
           }
         }
         // tell the 165 we are done reading the state, the next inclockpin=0 will output the next input value
@@ -1358,14 +1366,12 @@ boolean Bhoreal::reConnect()
   }
   
   unsigned long time_mode = 0;
-  int mode_ant = mode;
   ISR(INT6_vect) {
 
         if (digitalRead(BOT))
           {
              if ((millis()-time_mode)>500)
               {
-                 mode_ant = mode;
                  mode = 0;
                  time_mode = millis();   
               }
@@ -1373,8 +1379,7 @@ boolean Bhoreal::reConnect()
           }
          else
           {
-             mode_ant++; 
-             mode = mode_ant;
+             mode = mode_ant + 1;
              if (mode > 5) mode = 1;
           }
        
@@ -1442,6 +1447,7 @@ void Bhoreal::demoAccel()
   timer1Stop(); 
   while (mode==3)
     {
+      checkADC();
       for (int i=0; i<8; i++) 
         {
           for (int j=0; j<8; j++)  
@@ -1711,7 +1717,6 @@ void Bhoreal::checkServer() {
           if (open(WEB[0], 80))
            {
              for(byte i = 1; i<4; i++) Serial1.print(WEB[i]); //Requests to the server time
-             //if (FindInResponse("\r\n\r\n", 1000)) 
              if (FindInResponse("icon:", 1000)) 
                {
                     byte offset = 0;
@@ -1721,10 +1726,21 @@ void Bhoreal::checkServer() {
                       {
                         icon[offset] = Serial1.read();
                         time = millis();
+                        
 //                        Serial.print(icon[offset], DEC);
 //                        Serial.print(' ');
-                        ok = true;
+                        
                         offset++;
+                        if (icon[offset]>127) 
+                          {
+                            ok = false;
+                            break;
+                          }
+                        else if(offset==64) 
+                         {
+                            ok = true;
+                         }
+                         
 //                        if ((offset%8)==0) Serial.println();
                       }
                       else if((millis()-time)>1000)
@@ -1740,7 +1756,7 @@ void Bhoreal::checkServer() {
            }
         }
       }
-      Serial.println();
+//      Serial.println();
       if (ok) printChar(icon);
     }
   timer1Initialize();
@@ -1748,10 +1764,24 @@ void Bhoreal::checkServer() {
 
 void Bhoreal::selectMode() {
   timer1Stop();
+  unsigned long time_blink = millis();
   while (mode == 0)
     {
+       checkMatrix(false);
        for(int x = 0; x < NUM_LEDS; ++x) setPixelColor(remapSlim[GIR][x>>3][x%8], 255, 0, 0);
-       setPixelColor(remapSlim[GIR][(mode_ant-1)>>3][(mode_ant-1)%8], 0, 255, 0);
+       setPixelColor(remapSlim[GIR][(mode_ant)>>3][(mode_ant)%8], 0, 255, 0);
+       if (APMode)
+        {
+          if ((millis()-time_blink)<250) setPixelColor(remapSlim[GIR][63>>3][63%8], 255, 255, 0);
+          else if ((millis()-time_blink)>=500) time_blink = millis();
+          else  setPixelColor(remapSlim[GIR][63>>3][63%8], 255, 0, 0);
+        }
+       else 
+        {
+          if ((millis()-time_blink)<250) setPixelColor(remapSlim[GIR][63>>3][63%8], 0, 0, 255);
+          else if ((millis()-time_blink)>=500) time_blink = millis();
+          else  setPixelColor(remapSlim[GIR][63>>3][63%8], 255, 0, 0);
+        }
        show();
     }
   timer1Initialize();
