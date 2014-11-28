@@ -1693,7 +1693,7 @@ void Bhoreal::setPixelColor(
   }
 #endif
 
-char icon[64] = {0,0,0,0,0,0,0,0,
+char icon[65] = {0,0,0,0,0,0,0,0,
                  0,0,0,0,0,0,0,0,
                  0,0,0,0,0,0,0,0,
                  0,0,0,0,0,0,0,0,
@@ -1721,7 +1721,7 @@ void Bhoreal::checkServer() {
                {
                     byte offset = 0;
                     unsigned long time = millis();
-                    while (offset < 64) {
+                    while (offset < 65) {
                       if (Serial1.available())
                       {
                         icon[offset] = Serial1.read();
@@ -1729,18 +1729,16 @@ void Bhoreal::checkServer() {
                         
 //                        Serial.print(icon[offset], DEC);
 //                        Serial.print(' ');
-                        
-                        offset++;
                         if (icon[offset]>127) 
                           {
                             ok = false;
                             break;
                           }
-                        else if(offset==64) 
+                        else if ((offset==64)&&(icon[offset]=='#'))
                          {
-                            ok = true;
+                           ok = true;
                          }
-                         
+                        offset++;  
 //                        if ((offset%8)==0) Serial.println();
                       }
                       else if((millis()-time)>1000)
@@ -1749,7 +1747,6 @@ void Bhoreal::checkServer() {
                         break; 
                       }
                     }
-                   
                    break;
                  }
              close();
@@ -1757,7 +1754,19 @@ void Bhoreal::checkServer() {
         }
       }
 //      Serial.println();
-      if (ok) printChar(icon);
+      if (ok) 
+        {
+//          for (int x=0; x<64; x++)
+//            {
+//              Serial.print(icon[x], DEC);
+//              Serial.print(' ');
+//              if ((x>0)&&((x%8)==0)) Serial.println();
+//             }
+//          Serial.print(icon[64]);
+//          Serial.println();
+//          Serial.println();
+          printChar(icon);
+        }
     }
   timer1Initialize();
 }
