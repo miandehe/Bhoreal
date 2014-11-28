@@ -39,20 +39,20 @@ WIFLY Firmware Setting
 //  const char *IP = "192.168.0.255";
 //  const byte myAuth = WPA2;
   
-//  const char mySSID[] = "hangar_lab";  
-//  const char myPass[] = "labinteractius";
-//  const char *IP = "172.26.255.255";
-//  const byte myAuth = WPA2;
+  const char mySSID[] = "hangar_lab";  
+  const char myPass[] = "labinteractius";
+  const char *IP = "172.26.255.255";
+  const byte myAuth = WPA2;
   
 //  const char mySSID[] = "hangar_oficines";  
 //  const char myPass[] = "m1cr0fug4s";
 //  const char *IP = "172.26.255.255";
 //  const byte myAuth = WPA2;
   
-  const char mySSID[] = "Mi$Red";  
-  const char myPass[] = "FINALFANTASY";
-  const char *IP = "192.168.0.255";
-  const byte myAuth = WPA2;
+//  const char mySSID[] = "Mi$Red";  
+//  const char myPass[] = "FINALFANTASY";
+//  const char *IP = "192.168.0.255";
+//  const byte myAuth = WPA2;
   
   const char mySSIDAP[] = "bhoreal";  
   const char myPassAP[] = "";
@@ -105,7 +105,7 @@ ARDUINO ports definitions - GPIOS and ADCs
     #define TO_READ 6        //num of bytes we are going to read each time (two bytes for each axis)
     int regAddress = 0x32;    //first axis-acceleration-data register on the ADXL345
     
-    byte mode = 0;
+    int mode = 1;
     
     uint16_t MAX   =  8; 
     int NUM_LEDS   =  64; 

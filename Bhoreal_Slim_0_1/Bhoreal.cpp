@@ -247,7 +247,8 @@ void Bhoreal::begin()
 //  writeTo(DEVICE, 0x31, 0x01); //4g
     writeTo(DEVICE, 0x31, 0x02); //8g
 //  writeTo(DEVICE, 0x31, 0x03); //16g
-    AttachInterrupt6(RISING); //Cambio de 0 a 1
+    //AttachInterrupt6(RISING); //Cambio de 0 a 1
+    AttachInterrupt6(CHANGE); //Cambio de 0 a 1
   #else
     for(byte i = 0; i<4; i++) 
     {
@@ -327,14 +328,16 @@ void Bhoreal::startup(){
   
   for(int x = 0; x < NUM_LEDS; ++x){ 
     #if (MODEL == SLIM) || (MODEL == SLIMPRO)
-      uint32_t c = hue2rgb(x*2);  // 128 HUE steps / 64 leds, 2 steps x led
+      uint32_t c = hue2rgb((x+1)*2);  // 128 HUE steps / 64 leds, 2 steps x led
+      if (x == (NUM_LEDS-1)) c = hue2rgb(1);  // 128 HUE steps / 64 leds, 2 steps x led
       uint8_t
       r = (uint8_t)(c >> 16),
       g = (uint8_t)(c >>  8),
       b = (uint8_t)c;
       setPixelColor(remapSlim[GIR][x>>3][x%8], r, g, b);
     #else
-      uint32_t c = hue2rgb(x*8); // 128 HUE steps / 16 leds, 8 steps x led
+      uint32_t c = hue2rgb((x+1)*8); // 128 HUE steps / 16 leds, 8 steps x led
+      if (x == (NUM_LEDS-1)) c = hue2rgb(1);  // 128 HUE steps / 64 leds, 2 steps x led
       uint8_t
       r = (uint8_t)(c >> 16),
       g = (uint8_t)(c >>  8),
@@ -408,18 +411,21 @@ void Bhoreal::checkButtons(){
     #if (MODEL == SLIM) || (MODEL == SLIMPRO)
       switch (mode) {
         case 0:
-          checkMatrix();
+          selectMode();
           break;
         case 1:
-          programMode();
+          checkMatrix();
           break;
         case 2:
-          demoAccel();
+          programMode();
           break;
         case 3:
-          white();
+          demoAccel();
           break;
         case 4:
+          white();
+          break;
+        case 5:
           checkServer();
           break;
         }
@@ -747,29 +753,44 @@ ISR(TIMER1_OVF_vect)
   
 uint32_t Bhoreal::hue2rgb(uint16_t hueValue)
 {
-      hueValue<<= 3;  // 128 midi steps -> 1024 hue steps
-
-      if (hueValue < 341)  { // Lowest third of the potentiometer's range (0-340)
-        hueValue = (hueValue * 3) / 4; // Normalize to 0-255
+      if (hueValue==0)
+        {
+            rh = 0; 
+            gh = 0; 
+            bh = 0; 
+        } 
+      else if (hueValue>=127)
+        {
+            rh = 255; 
+            gh = 255; 
+            bh = 255; 
+        }
+      else
+        {
+          hueValue<<= 3;  // 128 midi steps -> 1024 hue steps
     
-        rh = 255 - hueValue;  // Red from full to off
-        gh = hueValue;        // Green from off to full
-        bh = 1;               // Blue off
-      }
-      else if (hueValue < 682) { // Middle third of potentiometer's range (341-681)
-        hueValue = ( (hueValue-341) * 3) / 4; // Normalize to 0-255
-    
-        rh = 1;              // Red off
-        gh = 255 - hueValue; // Green from full to off
-        bh = hueValue;       // Blue from off to full
-      }
-      else  { // Upper third of potentiometer"s range (682-1023)
-        hueValue = ( (hueValue-683) * 3) / 4; // Normalize to 0-255
-    
-        rh = hueValue;       // Red from off to full
-        gh = 1;              // Green off
-        bh = 255 - hueValue; // Blue from full to off
-      }
+          if (hueValue < 341)  { // Lowest third of the potentiometer's range (0-340)
+            hueValue = (hueValue * 3) / 4; // Normalize to 0-255
+        
+            rh = 255 - hueValue;  // Red from full to off
+            gh = hueValue;        // Green from off to full
+            bh = 1;               // Blue off
+          }
+          else if (hueValue < 682) { // Middle third of potentiometer's range (341-681)
+            hueValue = ( (hueValue-341) * 3) / 4; // Normalize to 0-255
+        
+            rh = 1;              // Red off
+            gh = 255 - hueValue; // Green from full to off
+            bh = hueValue;       // Blue from off to full
+          }
+          else  { // Upper third of potentiometer"s range (682-1023)
+            hueValue = ( (hueValue-683) * 3) / 4; // Normalize to 0-255
+        
+            rh = hueValue;       // Red from off to full
+            gh = 1;              // Green off
+            bh = 255 - hueValue; // Blue from full to off
+          }
+        }
       
       return ((uint32_t)rh << 16) | ((uint32_t)gh <<  8) | bh;
 }
@@ -1337,14 +1358,26 @@ boolean Bhoreal::reConnect()
   }
   
   unsigned long time_mode = 0;
-  
+  int mode_ant = mode;
   ISR(INT6_vect) {
-   if ((millis()-time_mode)>500)
-     {
-       mode++;
-       if (mode > 4) mode = 0;
-       time_mode = millis();
-     }
+
+        if (digitalRead(BOT))
+          {
+             if ((millis()-time_mode)>500)
+              {
+                 mode_ant = mode;
+                 mode = 0;
+                 time_mode = millis();   
+              }
+          //       Bhoreal_.AttachInterrupt6(FALLING);
+          }
+         else
+          {
+             mode_ant++; 
+             mode = mode_ant;
+             if (mode > 5) mode = 1;
+          }
+       
   }
   
   ///////////////////////////////////////////////////////////////
@@ -1364,7 +1397,7 @@ boolean Bhoreal::reConnect()
       int limit_ant = 0;
       int limit = 1;
       timer1Stop();
-      while (mode==1)
+      while (mode==2)
         {
           #if (MODEL == SLIMPRO)
            float charge = readBattery();
@@ -1407,7 +1440,7 @@ boolean Bhoreal::reConnect()
 void Bhoreal::demoAccel()
 {  
   timer1Stop(); 
-  while (mode==2)
+  while (mode==3)
     {
       for (int i=0; i<8; i++) 
         {
@@ -1434,7 +1467,7 @@ void Bhoreal::demoAccel()
 void Bhoreal::white()
 { 
   timer1Stop(); 
-  while (mode==3)
+  while (mode==4)
     {
       for(int x = 0; x < NUM_LEDS; ++x) setPixelColor(x, 255, 255, 255);
       show();  
@@ -1455,22 +1488,17 @@ void Bhoreal::printChar(byte value, byte pos)
     show();
 }
 
-void Bhoreal::printChar(char* text, byte color)
+void Bhoreal::printChar(char* text)
 {
-  uint32_t c = hue2rgb(color);  // 128 HUE steps / 64 leds, 2 steps x led
-  uint8_t r = (uint8_t)(c >> 16);
-  uint8_t g = (uint8_t)(c >>  8);
-  uint8_t b = (uint8_t)c;
-  
-  for (int i=0; i<8; i++)
-    {
-      for (int j=0; j<8; j++)
-        {
-          byte temp = (text[j]>>(7-i))&0x01;
-          setPixelColor(remapSlim[GIR][j][i],temp*r, temp*g, temp*b);
-        }
-    }
-    show();
+  for (int x=0; x<64; x++) 
+  {
+    uint32_t c = hue2rgb(text[x]);  // 128 HUE steps / 64 leds, 2 steps x led
+    uint8_t r = (uint8_t)(c >> 16);
+    uint8_t g = (uint8_t)(c >>  8);
+    uint8_t b = (uint8_t)c;
+    setPixelColor(remapSlim[GIR][x>>3][x%8],r, g, b);
+  }
+  show();
 }
 
 
@@ -1593,8 +1621,6 @@ void Bhoreal::setPixelColor(
           }
         else if (offsetWIFI==true)
           {
-            if ((inByte>0)&&(inByte<=127))
-              {
                 color = hue2rgb(inByte);  // velocity is used to HUE color selection and HUE is converted to RGB uint32 
                 red = (uint8_t)(color >> 16);
                 green = (uint8_t)(color >>  8);
@@ -1603,14 +1629,6 @@ void Bhoreal::setPixelColor(
                 refresh_led++;
                 time_led = millis();
                 offsetWIFI = false; 
-              }
-             else if (inByte==0)
-              {
-                setPixelColor(remapSlim[GIR][ledNumber>>3][ledNumber%8], 0, 0, 0);
-                refresh_led++;
-                time_led = millis();
-                offsetWIFI = false; 
-              }
           }
       }
     }
@@ -1669,11 +1687,18 @@ void Bhoreal::setPixelColor(
   }
 #endif
 
-char icon[8] = {0,0,0,0,0,0,0,0};
+char icon[64] = {0,0,0,0,0,0,0,0,
+                 0,0,0,0,0,0,0,0,
+                 0,0,0,0,0,0,0,0,
+                 0,0,0,0,0,0,0,0,
+                 0,0,0,0,0,0,0,0,
+                 0,0,0,0,0,0,0,0,
+                 0,0,0,0,0,0,0,0,
+                 0,0,0,0,0,0,0,0};
 
 void Bhoreal::checkServer() {
   timer1Stop();
-  while (mode==4)
+  while (mode==5)
     {
       boolean ok=false;
       uint8_t count = 0;
@@ -1691,14 +1716,16 @@ void Bhoreal::checkServer() {
                {
                     byte offset = 0;
                     unsigned long time = millis();
-                    while (offset < 8) {
+                    while (offset < 64) {
                       if (Serial1.available())
                       {
                         icon[offset] = Serial1.read();
                         time = millis();
-    //                    Serial.println(icon[offset], BIN);
+//                        Serial.print(icon[offset], DEC);
+//                        Serial.print(' ');
                         ok = true;
                         offset++;
+//                        if ((offset%8)==0) Serial.println();
                       }
                       else if((millis()-time)>1000)
                       {
@@ -1713,8 +1740,21 @@ void Bhoreal::checkServer() {
            }
         }
       }
-      if (ok) printChar(icon, random(1, 127));
+      Serial.println();
+      if (ok) printChar(icon);
     }
   timer1Initialize();
 }
+
+void Bhoreal::selectMode() {
+  timer1Stop();
+  while (mode == 0)
+    {
+       for(int x = 0; x < NUM_LEDS; ++x) setPixelColor(remapSlim[GIR][x>>3][x%8], 255, 0, 0);
+       setPixelColor(remapSlim[GIR][(mode_ant-1)>>3][(mode_ant-1)%8], 0, 255, 0);
+       show();
+    }
+  timer1Initialize();
+}
+
 

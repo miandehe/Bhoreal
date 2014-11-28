@@ -51,7 +51,7 @@ class Bhoreal {
     void sleep();
     void sleepNow();
     void printChar(byte value, byte pos);
-    void printChar(char* text, byte color);
+    void printChar(char* text);
     
     //WIFI
     boolean apMode();
@@ -76,7 +76,8 @@ class Bhoreal {
     void timer1Stop();
     void serialRequests();
     
-    
+    void AttachInterrupt6(int mode);
+    void selectMode();
   private:
   
     //Variables
@@ -92,7 +93,7 @@ class Bhoreal {
     void on_press(byte r, byte c);
     void on_release(byte r, byte c);
 
-    void AttachInterrupt6(int mode);
+    
     void detachInterrupt6();
     //Accelerometer
     void writeTo(int device, byte address, byte val);
