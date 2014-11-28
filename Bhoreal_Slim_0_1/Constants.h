@@ -10,6 +10,15 @@ Bhoreal models
 
 /* 
 
+WIFI modes
+
+*/
+#define NORMAL 0
+#define AP     1
+#define PROG_NORMAL 2
+#define PROG_AP     3
+/* 
+
 WIFI AND SERVER STATICS - WiFly, Http server parameters.
 
 */
@@ -106,7 +115,7 @@ ARDUINO ports definitions - GPIOS and ADCs
     int regAddress = 0x32;    //first axis-acceleration-data register on the ADXL345
     
     int mode = 1;
-    
+    int WIFIMode = NORMAL;
     uint16_t MAX   =  8; 
     int NUM_LEDS   =  64; 
     const uint16_t numBytes = 192;

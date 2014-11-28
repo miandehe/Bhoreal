@@ -10,16 +10,11 @@
 #define  DEMO_ACCEL        true
 #define  ENERGY_CONTROL    false
 #define  WIFI_SEND         true
-#define  APMode            false
 #define  ServerMode        true
 #define  wifiConfig        true
 
 
 #define buffer_length        32
-
-#if ServerMode
-  #define  APMode          false
-#endif
 
 //#define  MODEL  MINISLIM //Modelo
 #define  MODEL  SLIMPRO //Modelo

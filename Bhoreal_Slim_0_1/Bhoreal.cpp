@@ -210,27 +210,30 @@ void Bhoreal::begin()
           awake();
           #if wifiConfig
             config();
-            #if APMode
-              if (apMode())
-                {
-                  Serial.print("MAC: "); Serial.println(getMAC()); 
-                  Serial.print("IP: "); Serial.println(getIP()); 
-                }
-              else Serial.println("Desconectado :(");
-            #else
-            if (Connect()) 
+            if (WIFIMode == AP)
               {
-                Serial.println("Conectado!!");
-                  int report = checkWiFly();
-                  if (report == 1) Serial.println(F("Wifly Updated."));
-                  else if (report == 2) Serial.println(F("Update Fail."));
-                  else if (report == 0) Serial.println(F("WiFly up to date."));
-                  else if (report == -1) Serial.println(F("Error reading the wifi version."));
-                  Serial.print("MAC: "); Serial.println(getMAC()); 
-                  Serial.print("IP: "); Serial.println(getIP()); 
+                if (apMode())
+                  {
+                    Serial.print("MAC: "); Serial.println(getMAC()); 
+                    Serial.print("IP: "); Serial.println(getIP()); 
+                  }
+                else Serial.println("Desconectado :(");
               }
-            else Serial.println("Desconectado :(");
-            #endif
+            else 
+              {
+                if (Connect()) 
+                  {
+                    Serial.println("Conectado!!");
+                    int report = checkWiFly();
+                    if (report == 1) Serial.println(F("Wifly Updated."));
+                    else if (report == 2) Serial.println(F("Update Fail."));
+                    else if (report == 0) Serial.println(F("WiFly up to date."));
+                    else if (report == -1) Serial.println(F("Error reading the wifi version."));
+                    Serial.print("MAC: "); Serial.println(getMAC()); 
+                    Serial.print("IP: "); Serial.println(getIP()); 
+                  }
+                else Serial.println("Desconectado :(");
+              }
           #endif
         }
       else 
@@ -276,11 +279,10 @@ void Bhoreal::config(){
     reset();
     delay(1000);
     BaudSetup();
-    #if APMode
+    if (WIFIMode==AP)
        apMode();
-    #else
-      reConnect();
-    #endif
+    else
+       reConnect();
   }
 }
 
@@ -478,14 +480,17 @@ void Bhoreal::checkMatrix(boolean Send)
             if (Send) on_press(c, r[i]);
             else
              {
-               mode_ant = c + r[i]*8; 
+               if ((c + r[i]*8)== 63) 
+                 {
+                   if (WIFIMode == NORMAL) WIFIMode = PROG_AP;
+                   else if (WIFIMode == AP) WIFIMode = PROG_NORMAL;
+                 }
+               else mode_ant = c + r[i]*8; 
 //               Serial.print(' '); 
 //               Serial.println(r[i]); 
              }
           }
-          else {
-            if (Send) on_release(c, r[i]);
-          }
+          else if (Send) on_release(c, r[i]);
         }
         // tell the 165 we are done reading the state, the next inclockpin=0 will output the next input value
          PORTC |= B01000000; //digitalWrite(INCLOCKPIN, HIGH);
@@ -1704,7 +1709,7 @@ char icon[65] = {0,0,0,0,0,0,0,0,
 
 void Bhoreal::checkServer() {
   timer1Stop();
-  while (mode==5)
+  while ((mode==5)&&(WIFIMode==NORMAL))
     {
       boolean ok=false;
       uint8_t count = 0;
@@ -1753,22 +1758,9 @@ void Bhoreal::checkServer() {
            }
         }
       }
-//      Serial.println();
-      if (ok) 
-        {
-//          for (int x=0; x<64; x++)
-//            {
-//              Serial.print(icon[x], DEC);
-//              Serial.print(' ');
-//              if ((x>0)&&((x%8)==0)) Serial.println();
-//             }
-//          Serial.print(icon[64]);
-//          Serial.println();
-//          Serial.println();
-          printChar(icon);
-        }
-    }
-  timer1Initialize();
+      if (ok) printChar(icon);
+  }
+ timer1Initialize();
 }
 
 void Bhoreal::selectMode() {
@@ -1779,19 +1771,33 @@ void Bhoreal::selectMode() {
        checkMatrix(false);
        for(int x = 0; x < NUM_LEDS; ++x) setPixelColor(remapSlim[GIR][x>>3][x%8], 255, 0, 0);
        setPixelColor(remapSlim[GIR][(mode_ant)>>3][(mode_ant)%8], 0, 255, 0);
-       if (APMode)
+       if (WIFIMode == AP)
         {
           if ((millis()-time_blink)<250) setPixelColor(remapSlim[GIR][63>>3][63%8], 255, 255, 0);
           else if ((millis()-time_blink)>=500) time_blink = millis();
           else  setPixelColor(remapSlim[GIR][63>>3][63%8], 255, 0, 0);
         }
-       else 
+       else if (WIFIMode == NORMAL)
         {
           if ((millis()-time_blink)<250) setPixelColor(remapSlim[GIR][63>>3][63%8], 0, 0, 255);
           else if ((millis()-time_blink)>=500) time_blink = millis();
           else  setPixelColor(remapSlim[GIR][63>>3][63%8], 255, 0, 0);
         }
-       show();
+       else if (WIFIMode == PROG_NORMAL)
+        {
+          setPixelColor(remapSlim[GIR][63>>3][63%8], 255, 0, 255);
+          show();
+          while (!reConnect());
+          WIFIMode = NORMAL;
+        }
+       else if (WIFIMode == PROG_AP)
+        {
+          setPixelColor(remapSlim[GIR][63>>3][63%8], 255, 0, 255);
+          show();
+          apMode();
+          WIFIMode = AP;
+        }
+        show();
     }
   timer1Initialize();
 }
