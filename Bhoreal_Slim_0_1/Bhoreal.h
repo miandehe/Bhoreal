@@ -52,6 +52,7 @@ class Bhoreal {
     boolean apMode();
     boolean Connect();
     boolean reConnect();
+    void protocolDefine(byte protocol);
     void WIFIsleep();
     void WIFISend(byte value, boolean state);
     boolean reset();

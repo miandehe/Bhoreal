@@ -32,6 +32,7 @@ WIFI AND SERVER STATICS - WiFly, Http server parameters.
 
 #define UDP  1
 #define TCP  2
+#define HTML 16
 
 #define EXT_ANT "1" // External Antenna
 #define INT_ANT "0" // Internal Antenna
@@ -68,11 +69,11 @@ WIFLY Firmware Setting
   const char *IPAP = "192.168.0.255";
   const byte myAuthAP = OPEN;
   
-  #if ServerMode
-    const int protocol = 18;
-  #else  
+//  #if ServerMode
+//    const int protocol = HTML + TCP;
+//  #else  
     const int protocol = UDP;
-  #endif
+//  #endif
   const char antenna[] = INT_ANT;
   const uint16_t outPort = 8000;
   const uint16_t localPort = 9000;   

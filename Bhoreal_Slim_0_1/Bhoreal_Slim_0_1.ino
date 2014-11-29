@@ -27,6 +27,8 @@ void loop () {
   Bhoreal.checkADC();
   
   Bhoreal.refresh();
+  
+//  Bhoreal.WIFIRead();
 
 }
 
