@@ -82,12 +82,12 @@ class Bhoreal {
     const volatile uint8_t *port;         // Output PORT register
     uint8_t pinMask;                // Output PORT bitmask    
     
-    void checkMatrix(boolean Send);
+    void checkMatrix(byte sel);
     void demoAccel();
     void white();
     void programMode();
-    void on_press(byte r, byte c);
-    void on_release(byte r, byte c);
+    void on_press(byte r, byte c, byte sel);
+    void on_release(byte r, byte c, byte sel);
 
     
     void detachInterrupt6();

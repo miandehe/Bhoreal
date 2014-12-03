@@ -20,15 +20,11 @@ void setup() {
   
 void loop () {
  
-  Bhoreal.midiRefresh();
-  // Check the button states
   Bhoreal.checkButtons();
   // Check and report the ADC states, if necessary
   Bhoreal.checkADC();
   
   Bhoreal.refresh();
-  
-//  Bhoreal.WIFIRead();
 
 }
 

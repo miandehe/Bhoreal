@@ -34,6 +34,10 @@ WIFI AND SERVER STATICS - WiFly, Http server parameters.
 #define TCP  2
 #define HTML 16
 
+#define SELECTOR 0
+#define MIDI  2
+
+
 #define EXT_ANT "1" // External Antenna
 #define INT_ANT "0" // Internal Antenna
 
@@ -60,7 +64,7 @@ WIFLY Firmware Setting
 //  const byte myAuth = WPA2;
   
   const char mySSID[] = "Mi$Red";  
-  const char myPass[] = "FINALFANTASY";
+  const char myPass[] = "labinteractius";
   const char *IP = "192.168.0.255";
   const byte myAuth = WPA2;
   
