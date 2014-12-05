@@ -167,8 +167,9 @@ void Bhoreal::begin()
     slaveRead(3);  //Check slave ON
     //Gestion de sleep del Bhoreal
     #if (MODEL == SLIMPRO) 
-      #if ENERGY_CONTROL
-        if ((EEPROM.read(EE_ADDR_POWER)>0)||((readBattery()<BAT_MIN)&&(readBattery()>2000)))
+     // #if ENERGY_CONTROL
+        //if ((EEPROM.read(EE_ADDR_POWER)>0)||((readBattery()<BAT_MIN)&&(readBattery()>2000)))
+        if (EEPROM.read(EE_ADDR_POWER)>0)
           {
             EEPROM.write(EE_ADDR_POWER, 0);       
             slaveSend(2); //Apaga atmega328
@@ -176,7 +177,7 @@ void Bhoreal::begin()
             sleepNow();
           }
         else 
-      #endif
+     // #endif
         {
           EEPROM.write(EE_ADDR_POWER, 1);   
           slaveSend(1); //Activa atmega328
@@ -519,7 +520,9 @@ void Bhoreal::checkMatrix(byte sel)
                    if (WIFIMode == NORMAL) WIFIMode = PROG_AP;
                    else if (WIFIMode == AP) WIFIMode = PROG_NORMAL;
                  }
-               else  if ((c + r[i]*8)<modeMAX) mode_ant = c + r[i]*8; 
+               else if ((c + r[i]*8)== 62) charge_mode=!charge_mode;
+               else if ((c + r[i]*8)<modeMAX) mode_ant = c + r[i]*8; 
+               
              }
           }
           else if (sel!=SELECTOR) on_release(c, r[i], sel);
@@ -1805,6 +1808,7 @@ void Bhoreal::checkServer() {
            }
         }
       }
+      if (retry>5) Ready();
       if (ok) printChar(icon);
   }
  protocolDefine(UDP);
@@ -1824,6 +1828,16 @@ void Bhoreal::selectMode() {
        for(int x = modeMAX; x < NUM_LEDS; ++x) setPixelColor(remapSlim[GIR][x>>3][x%8], 0, 0, 0);
        setPixelColor(remapSlim[GIR][(mode_ant)>>3][(mode_ant)%8], 0, 255, 0);
        #if (MODEL == SLIMPRO) 
+         if (charge_mode) 
+           {
+             slaveSend(5); //Enciende atmega328
+             setPixelColor(remapSlim[GIR][62>>3][62%8], 0, 255, 0);
+           }
+         else 
+           {
+             slaveSend(4); //Apaga atmega328
+             setPixelColor(remapSlim[GIR][62>>3][62%8], 255, 0, 0);
+           }
          if (WIFIMode == AP)
           {
             if ((millis()-time_blink)<250) setPixelColor(remapSlim[GIR][63>>3][63%8], 255, 255, 0);

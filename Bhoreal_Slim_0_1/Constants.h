@@ -53,20 +53,20 @@ WIFLY Firmware Setting
 //  const char *IP = "192.168.0.255";
 //  const byte myAuth = WPA2;
   
-//  const char mySSID[] = "hangar_lab";  
-//  const char myPass[] = "labinteractius";
-//  const char *IP = "172.26.255.255";
-//  const byte myAuth = WPA2;
+  const char mySSID[] = "hangar_lab";  
+  const char myPass[] = "labinteractius";
+  const char *IP = "172.26.255.255";
+  const byte myAuth = WPA2;
   
 //  const char mySSID[] = "hangar_oficines";  
 //  const char myPass[] = "m1cr0fug4s";
 //  const char *IP = "172.26.255.255";
 //  const byte myAuth = WPA2;
   
-  const char mySSID[] = "Mi$Red";  
-  const char myPass[] = "labinteractius";
-  const char *IP = "192.168.0.255";
-  const byte myAuth = WPA2;
+//  const char mySSID[] = "Hello_pepe";  
+//  const char myPass[] = "labinteractius";
+//  const char *IP = "192.168.0.255";
+//  const byte myAuth = WPA2;
   
   const char mySSIDAP[] = "bhoreal";  
   const char myPassAP[] = "";
@@ -120,6 +120,7 @@ ARDUINO ports definitions - GPIOS and ADCs
     int regAddress = 0x32;    //first axis-acceleration-data register on the ADXL345
     
     int mode = 1;
+    boolean charge_mode = true;
     int WIFIMode = NORMAL;
     uint16_t MAX   =  8; 
     int NUM_LEDS   =  64; 
@@ -160,7 +161,8 @@ Internal EEPROM Memory Addresses
 
 static char* WEB[4]={                  
                   "apps.ioapps.net",
-                  "GET /xavidev/bhoreal/notifications.php HTTP/1.1 \n",
+//                  "GET /xavidev/bhoreal/notifications.php HTTP/1.1 \n",
+                  "GET /xavidev/bhoreal/notifications.php?user=miguel HTTP/1.1 \n",
                   "Host: apps.ioapps.net \n",
                   "User-Agent: Bhoreal \n\n"  
                   };
