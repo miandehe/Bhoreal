@@ -4,14 +4,10 @@
 #include <EEPROM.h>
 
 
-  Bhoreal Bhoreal_;
-  uint8_t pixels[numBytes];
-//  uint32_t baud[3]={ 115200, 57600, 9600};
-//#if ServerMode
-//  uint32_t baud[3]={9600, 57600, 115200};
-//#else
-  uint32_t baud[3]={57600, 9600, 115200};
-//#endif
+Bhoreal Bhoreal_;
+uint8_t pixels[numBytes];
+uint32_t baud[3]={57600, 9600, 115200};
+
   
 boolean pressed[8][8] = {      // pushbottons states matrix
   {1,1,1,1,1,1,1,1},
@@ -167,7 +163,7 @@ void Bhoreal::begin()
     slaveRead(3);  //Check slave ON
     //Gestion de sleep del Bhoreal
     #if (MODEL == SLIMPRO) 
-     // #if ENERGY_CONTROL
+     // #if BAT_MONITOR
         //if ((EEPROM.read(EE_ADDR_POWER)>0)||((readBattery()<BAT_MIN)&&(readBattery()>2000)))
         if (EEPROM.read(EE_ADDR_POWER)>0)
           {
@@ -197,7 +193,7 @@ void Bhoreal::begin()
     // Start the wifi
     #if (MODEL == SLIMPRO)
       Serial1.begin(baud[0]); //WIFI inicializado a 57600
-      #if ENERGY_CONTROL
+      #if BAT_MONITOR
         if ((readBattery()<2000)||(slaveRead(3)>0)) //Low battery level or usb connected
           {
             PORTD &= B11101111; //digitalWrite(POWER_VCC, LOW);
@@ -205,7 +201,7 @@ void Bhoreal::begin()
           }
         else if (readBattery()>BAT_MIN)
       #else
-      if (true)
+      if (true) // ????????
       #endif
         {
           awake();
@@ -466,7 +462,7 @@ void Bhoreal::checkButtons(){
       if ((millis()-time_button)>1)
         {
           time_button = millis();
-          for(int r= MAX - 1; r >= 0; r--)
+          for(int r= NUM_ROWS - 1; r >= 0; r--)
           {
             if(pressed[count_column][r] != digitalRead(column[r]))
             { // read the state
@@ -478,7 +474,7 @@ void Bhoreal::checkButtons(){
           }
           digitalWrite(row[count_column],LOW);
           count_column++;
-          if (count_column>MAX) count_column=0;
+          if (count_column>NUM_ROWS) count_column=0;
           digitalWrite(row[count_column],HIGH);
           
         }
@@ -498,7 +494,7 @@ void Bhoreal::checkMatrix(byte sel)
    
    PORTB &= B11101111; //digitalWrite(CLOCKPIN,LOW);
    PORTB |= B00100000; //digitalWrite(DATAPIN, HIGH); 
-   for(byte c = 0; c < MAX; c++)
+   for(byte c = 0; c < NUM_ROWS; c++)
      {
       PORTB |= B00010000; //digitalWrite(CLOCKPIN, HIGH);
     
@@ -506,7 +502,7 @@ void Bhoreal::checkMatrix(byte sel)
       delayMicroseconds(1);
       PORTB |= B01000000; //digitalWrite(INLOADPIN, HIGH); // done reading into register, ready for us to read
       
-      for(int i= 0; i < MAX; i++){ // read each of the 165's 4 inputs (or its snapshot of it rather)
+      for(int i= 0; i < NUM_ROWS; i++){ // read each of the 165's 4 inputs (or its snapshot of it rather)
         // tell the 165 to send the first inputs pin state
         PORTC &= B10111111; //digitalWrite(INCLOCKPIN, LOW);
         // read the current output
@@ -521,7 +517,7 @@ void Bhoreal::checkMatrix(byte sel)
                    if (WIFIMode == NORMAL) WIFIMode = PROG_AP;
                    else if (WIFIMode == AP) WIFIMode = PROG_NORMAL;
                  }
-               else if ((c + r[i]*8)== 62) charge_mode=!charge_mode;
+               else if ((c + r[i]*8)== 62) charge_on=!charge_on;
                else if ((c + r[i]*8)<modeMAX) mode_ant = c + r[i]*8; 
                
              }
@@ -727,7 +723,7 @@ void Bhoreal::checkADC(){
   void Bhoreal::checkBattery()
       {
         #if (MODEL == SLIMPRO)
-          #if ENERGY_CONTROL
+          #if BAT_MONITOR
             charge = readBattery();
             if ((charge<(BAT_MIN - 300))&&(charge>2000)&&(!charge_state))
             {        
@@ -994,6 +990,7 @@ char* Bhoreal::itoa(int32_t number)
      temp = temp/10; 
    }
    if (number < 0) {buffer[0] = '-';} 
+   
    buffer[count + 1] = 0x00;
    return buffer;   
   }
@@ -1059,7 +1056,7 @@ boolean Bhoreal::apMode()
             SendCommand(F("set ip proto "), true);
             SendCommand(itoa(protocol));
             SendCommand(F("set ip host "), true);
-            SendCommand(IPAP);
+            SendCommand(IPHOST_AP);
             SendCommand(F("set ip localport "), true);
             SendCommand(itoa(localPort));
             SendCommand(F("set ip remote "), true);
@@ -1115,7 +1112,7 @@ boolean Bhoreal::reConnect()
             SendCommand(F("set ip proto "), true);
             SendCommand(itoa(protocol));
             SendCommand(F("set ip host "), true);
-            SendCommand(IP);
+            SendCommand(IPHOST);
             SendCommand(F("set ip localport "), true);
             SendCommand(itoa(localPort));
             SendCommand(F("set ip remote "), true);
@@ -1842,7 +1839,7 @@ void Bhoreal::selectMode() {
        for(int x = modeMAX; x < NUM_LEDS; ++x) setPixelColor(remapSlim[GIR][x>>3][x%8], 0, 0, 0);
        setPixelColor(remapSlim[GIR][(mode_ant)>>3][(mode_ant)%8], 0, 255, 0);
        #if (MODEL == SLIMPRO) 
-         if (charge_mode) 
+         if (charge_on) 
            {
              slaveSend(5); //Enciende atmega328
              setPixelColor(remapSlim[GIR][62>>3][62%8], 0, 255, 0);
