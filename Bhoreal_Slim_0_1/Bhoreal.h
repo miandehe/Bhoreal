@@ -4,17 +4,14 @@
 #include <avr/sleep.h>
 #include <avr/power.h>
 
-#define  SERIAL_ENABLE     false
-#define  MIDI_DEBUG        false
-#define  SERIAL_DATA       false
-#define  DEMO_ACCEL        true
-#define  ENERGY_CONTROL    false
-#define  WIFI_SEND         true
-#define  ServerMode        true
+#define  SERIAL_ENABLE     false    // Enable Serial comunication
+#define  MIDI_DEBUG        false    // Enable MIDI debuging
+//#define  SERIAL_DATA       false
+#define  DEMO_ACCEL        true     // Enable accelerometer
+#define  BAT_MONITOR       false    // Battery monitor enabled
 #define  wifiConfig        true
 
-
-#define buffer_length        32
+#define buffer_length        32     // Buffer for eeprom data
 
 //#define  MODEL  MINISLIM //Modelo
 #define  MODEL  SLIMPRO //Modelo
