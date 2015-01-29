@@ -84,12 +84,13 @@ WIFLY Firmware Setting
   const uint16_t outPort = 8000;  // DESTINATION UDP PORT
   const uint16_t localPort = 9000;   // LOCAL UDP PORT
   
+  // WIFLY FIRMWARE AUTO UPDATE AND VERSIONS
+  #define WIFLY_LATEST_VERSION 441
+  #define DEFAULT_WIFLY_FIRMWARE "ftp update wifly3-441.img"
+  #define DEFAULT_WIFLY_FTP_UPDATE "set ftp address 198.175.253.161"
 #endif
 
-// WIFLY FIRMWARE AUTO UPDATE AND VERSIONS
-#define WIFLY_LATEST_VERSION 441
-#define DEFAULT_WIFLY_FIRMWARE "ftp update wifly3-441.img"
-#define DEFAULT_WIFLY_FTP_UPDATE "set ftp address 198.175.253.161"
+
 
 /* 
 

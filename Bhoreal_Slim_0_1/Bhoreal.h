@@ -13,8 +13,8 @@
 
 #define buffer_length        32     // Buffer for eeprom data
 
-//#define  MODEL  MINISLIM //Modelo
-#define  MODEL  SLIMPRO //Modelo
+#define  MODEL  MINISLIM //Modelo
+//#define  MODEL  SLIMPRO //Modelo
 //#define  MODEL  SLIM //Modelo
 
 class Bhoreal {
@@ -85,6 +85,8 @@ class Bhoreal {
     void programMode();
     void on_press(byte r, byte c, byte sel);
     void on_release(byte r, byte c, byte sel);
+    void on_press(byte r, byte c);
+    void on_release(byte r, byte c);
 
     
     void detachInterrupt6();
