@@ -54,10 +54,10 @@ WIFLY Firmware Setting
 //  const char *IPHOST = "192.168.0.255";
 //  const byte myAuth = WPA2;
   
-//  const char mySSID[] = "hangar_lab";  
-//  const char myPass[] = "labinteractius";
-//  const char *IPHOST = "172.26.255.255";
-//  const byte myAuth = WPA2;
+  const char mySSID[] = "hangar_lab";  
+  const char myPass[] = "labinteractius";
+  const char *IPHOST = "172.26.255.255";
+  const byte myAuth = WPA2;
   
 //  const char mySSID[] = "hangar_oficines";  
 //  const char myPass[] = "m1cr0fug4s";
@@ -69,10 +69,10 @@ WIFLY Firmware Setting
 //  const char *IPHOST = "192.168.0.255"; // IP destination AP MODE
 //  const byte myAuth = WPA2;
 //  
-  const char mySSID[] = "mid";  // SSID EXTERNAL WIFI
-  const char myPass[] = "";   // PASSWORD EXTERNAL WIFI
-  const char *IPHOST = "192.168.0.255"; // IP destination AP MODE
-  const byte myAuth = OPEN;
+//  const char mySSID[] = "mid";  // SSID EXTERNAL WIFI
+//  const char myPass[] = "";   // PASSWORD EXTERNAL WIFI
+//  const char *IPHOST = "192.168.0.255"; // IP destination AP MODE
+//  const byte myAuth = OPEN;
   
   const char mySSIDAP[] = "bhoreal";  // SSID AP MODE
   const char myPassAP[] = "";         // PASSWORD AP MODE

@@ -169,7 +169,7 @@ void Bhoreal::begin()
     #if (MODEL == SLIMPRO) 
      // #if BAT_MONITOR
         //if ((EEPROM.read(EE_ADDR_POWER)>0)||((readBattery()<BAT_MIN)&&(readBattery()>2000)))
-        if (EEPROM.read(EE_ADDR_POWER)>0)
+        if ((EEPROM.read(EE_ADDR_POWER)>0)&&(compareData(__TIME__, readData(EE_ADDR_TIME_VERSION))))
           {
             EEPROM.write(EE_ADDR_POWER, 0);       
             slaveSend(2); //Apaga atmega328
@@ -1437,7 +1437,6 @@ boolean Bhoreal::reConnect()
                  mode = 0;
                  time_mode = millis();   
               }
-          //       Bhoreal_.AttachInterrupt6(FALLING);
           }
          else
           {
@@ -1492,12 +1491,20 @@ boolean Bhoreal::reConnect()
                 flagprog = false;
               }
               Serial1.write(Serial.read());
-    
               time = millis();
             }
-          if (Serial1.available())
-            Serial.write(Serial1.read());
-          if ((millis()- time)>=1000) flagprog = true;
+          while (!flagprog)
+            {
+              if (Serial.available())
+                {
+                  Serial1.write(Serial.read());
+                  time = millis();
+                }
+              if (Serial1.available())
+                Serial.write(Serial1.read());
+              if ((millis()- time)>=1000) flagprog = true;
+            }
+          slaveSend(1); //Activa atmega328
        }
        digitalWrite(MUX, HIGH); 
        #if (MODEL == SLIMPRO) 
@@ -1862,12 +1869,12 @@ void Bhoreal::checkServer() {
          #if (MODEL == SLIMPRO) 
            if (charge_on) 
              {
-               slaveSend(5); //Enciende atmega328
+               slaveSend(5); 
                setPixelColor(remapSlim[GIR][62>>3][62%8], 0, 255, 0);
              }
            else 
              {
-               slaveSend(4); //Apaga atmega328
+               slaveSend(4);
                setPixelColor(remapSlim[GIR][62>>3][62%8], 255, 0, 0);
              }
            if (WIFIMode == AP)

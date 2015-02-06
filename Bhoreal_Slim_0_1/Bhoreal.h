@@ -13,8 +13,8 @@
 
 #define buffer_length        32     // Buffer for eeprom data
 
-#define  MODEL  MINISLIM //Modelo
-//#define  MODEL  SLIMPRO //Modelo
+//#define  MODEL  MINISLIM //Modelo
+#define  MODEL  SLIMPRO //Modelo
 //#define  MODEL  SLIM //Modelo
 
 class Bhoreal {
