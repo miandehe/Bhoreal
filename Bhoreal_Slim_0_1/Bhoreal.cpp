@@ -1307,6 +1307,7 @@ boolean Bhoreal::reConnect()
   boolean Bhoreal::update() {
     if (EnterCommandMode())
     {
+      Serial.println("Actualizando modulo WIFI...");
       SendCommand(F(DEFAULT_WIFLY_FIRMWARE));
       delay(1000);
       if (FindInResponse("FTP OK.", 60000))
