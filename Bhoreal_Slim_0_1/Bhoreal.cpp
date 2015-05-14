@@ -265,6 +265,8 @@ void Bhoreal::begin()
     
     PORTE |= B01000000;
     DDRE  |= B01000000;
+    PORTB |= B00000010;
+    DDRB  |= B00000010;
     
     // Setup the timer interrupt
     timer1Initialize();   
@@ -802,8 +804,16 @@ void Bhoreal::timer1Initialize()
  
 ISR(TIMER1_OVF_vect)
 {
-       if (PORTE&B01000000) PORTE &= B10111111;
-       else PORTE |= B01000000;
+       if (PORTE&B01000000) 
+         {
+           PORTB |= B00000010;
+           PORTE &= B10111111;
+         }
+       else 
+         {
+           PORTE |= B01000000;
+           PORTB &= B11111101;
+         }
 }
 
 #endif
