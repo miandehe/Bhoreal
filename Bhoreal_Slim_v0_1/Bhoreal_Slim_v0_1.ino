@@ -24,7 +24,7 @@ void loop () {
   // Check and report the ADC states, if necessary
   Bhoreal.checkADC();
   
-  Bhoreal.refresh();
+  Bhoreal.displayRefresh();
 
 }
 

@@ -4,10 +4,6 @@
 #include <avr/sleep.h>
 #include <avr/power.h>
 
-#define  SERIAL_ENABLE     false    // Enable Serial comunication
-#define  MIDI_DEBUG        false    // Enable MIDI debuging
-//#define  SERIAL_DATA       false
-#define  DEMO_ACCEL        true     // Enable accelerometer
 #define  BAT_MONITOR       false    // Battery monitor enabled
 #define  wifiConfig        true
 
@@ -30,7 +26,7 @@ class Bhoreal {
     void writeData(uint32_t eeaddress, char* text);
     char* readData(uint16_t eeaddress);
     void checkButtons();
-    void refresh();
+    void displayRefresh();
     void midiRefresh();
     void startup();
     float readBattery();

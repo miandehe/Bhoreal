@@ -167,8 +167,6 @@ void Bhoreal::begin()
     slaveRead(3);  //Check slave ON
     //Gestion de sleep del Bhoreal
     #if (MODEL == SLIMPRO) 
-     // #if BAT_MONITOR
-        //if ((EEPROM.read(EE_ADDR_POWER)>0)||((readBattery()<BAT_MIN)&&(readBattery()>2000)))
         if ((EEPROM.read(EE_ADDR_POWER)>0)&&(compareData(__TIME__, readData(EE_ADDR_TIME_VERSION))))
           {
             EEPROM.write(EE_ADDR_POWER, 0);       
@@ -177,7 +175,6 @@ void Bhoreal::begin()
             sleepNow();
           }
         else 
-     // #endif
         {
           EEPROM.write(EE_ADDR_POWER, 1);   
           slaveSend(1); //Activa atmega328
@@ -201,7 +198,7 @@ void Bhoreal::begin()
           }
         else if (readBattery()>BAT_MIN)
       #else
-      if (true) // ????????
+        if (true) // ????????
       #endif
         {
           awake();
@@ -259,9 +256,7 @@ void Bhoreal::begin()
     pinMode(PIN_LED, OUTPUT);
     digitalWrite(PIN_LED, LOW);
     // Start the serial port
-    #if SERIAL_ENABLE
-      Serial.begin(BAUD);
-    #endif    
+    Serial.begin(BAUD);  
     
     PORTE |= B01000000;
     DDRE  |= B01000000;
@@ -435,7 +430,6 @@ void Bhoreal::checkButtons(){
       #if (MODEL == SLIMPRO)
         case 1:
           midiRefresh();
-          checkADC();
           // Check the button states
           checkMatrix(MIDI);
           break;
@@ -474,9 +468,9 @@ void Bhoreal::checkButtons(){
         }
     #else
       midiRefresh();
-      if ((millis()-time_button)>1)
+      if ((micros()-time_button)>1000)
         {
-          time_button = millis();
+          time_button = micros();
           for(int r= NUM_ROWS - 1; r >= 0; r--)
           {
             if(pressed[count_column][r] != digitalRead(column[r]))
@@ -555,15 +549,13 @@ void Bhoreal::checkButtons(){
 ////////////////////////////////////////////////////////////////
 byte refresh_led = 0;
 unsigned long time_led = 0;
-void Bhoreal::refresh(){ 
-  if (((refresh_led>0)&&((millis()-time_led)>1))||(refresh_led>=NUM_LEDS)||((refresh_led<NUM_LEDS)&&((millis()-time_led)>25))&&(refresh_led>0))
+void Bhoreal::displayRefresh(){ 
+  if (((refresh_led>0)&&((micros()-time_led)>1000))||(refresh_led>=NUM_LEDS)||((refresh_led<NUM_LEDS)&&((micros()-time_led)>25000))&&(refresh_led>0))
     {
       refresh_led=0;
       show();
     }
 }
-
-
 
 ////////////////////////////////////////////////////////////////
 ////////////////////// REFRESH MIDI & LED  /////////////////////
@@ -574,30 +566,7 @@ void Bhoreal::refresh(){
       {
         MIDIEvent e;
         e = MIDIUSB.read();
-        #if SERIAL_ENABLE
-            if(MIDI_DEBUG)
-            {
-              if(e.type != 0x0F) // timestamp 1 BYTE
-              {
-                Serial.print("Midi Packet: ");
-                Serial.print(e.type);
-                Serial.print("\t");
-                Serial.print(e.m1);
-                Serial.print("\t");
-                Serial.print(e.m2);
-                Serial.print("\t");
-                Serial.println(e.m3);
-              }
-            }
-        #endif
         #if (MODEL == SLIM) || (MODEL == SLIMPRO)
-//              Serial.print("Recibido: ");
-//              Serial.print(e.m2);
-//              Serial.print(' ');
-//              Serial.print(e.m2%8);
-//              Serial.print(' ');
-//              Serial.println(e.m2>>3);
-              
             if((e.type == 0x09) && (e.m3))  // NoteON midi message with vel > 0
             {  
               uint32_t c = hue2rgb(e.m3);  // velocity is used to HUE color selection and HUE is converted to RGB uint32 
@@ -605,20 +574,15 @@ void Bhoreal::refresh(){
                 r = (uint8_t)(c >> 16),
                 g = (uint8_t)(c >>  8),
                 b = (uint8_t)c;
-                
-
-              
-              //setPixelColor(remapSlim[GIR][e.m2%8][e.m2>>3], r, g, b);
               setPixelColor(remapSlim[GIR][e.m2>>3][e.m2%8], r, g, b);
               refresh_led++;
-              time_led = millis();
+              time_led = micros();
             }
             else if( (e.type == 0x08) || ((e.type == 0x09) && !e.m3) ) // NoteOFF midi message
             {  
-              //setPixelColor(remapSlim[GIR][e.m2%8][e.m2>>3], 0, 0, 0);
               setPixelColor(remapSlim[GIR][e.m2>>3][e.m2%8], 0, 0, 0);
               refresh_led++;
-              time_led = millis();
+              time_led = micros();
             }  
         #else
             if((e.type == 0x09) && (e.m3))  //  NoteON midi message with vel > 0
@@ -628,22 +592,17 @@ void Bhoreal::refresh(){
                 r = (uint8_t)(c >> 16),
                 g = (uint8_t)(c >>  8),
                 b = (uint8_t)c;
-        
-              //setPixelColor(remapMini[e.m2%4][e.m2>>2], r, g, b);
               setPixelColor(remapMini[e.m2>>2][e.m2%4], r, g, b);
               refresh_led++;
-              time_led = millis();
+              time_led = micros();
             }
             else if( (e.type == 0x08) || ((e.type == 0x09) && !e.m3) ) // NoteOFF midi message
             {  
-              //setPixelColor(remapMini[e.m2%4][e.m2>>2], 0, 0, 0);
               setPixelColor(remapMini[e.m2>>2][e.m2%4], 0, 0, 0);
               refresh_led++;
-              time_led = millis();
+              time_led = micros();
             }
-        #endif
-            MIDIUSB.flush(); // delete it???
-          
+        #endif 
           }
   }
 
@@ -684,7 +643,6 @@ void Bhoreal::refresh(){
         }
         Wire.endTransmission(); //end transmission
       }
-      
       int x=0;
       int y=0;
       int z=0;     
@@ -762,6 +720,7 @@ void Bhoreal::checkADC(){
       }
 #endif
 
+
 ///////////////////////////////////////////////////////////////
 //////////////////////  TIMERS SETTINGS  //////////////////////
 ///////////////////////////////////////////////////////////////
@@ -817,6 +776,7 @@ ISR(TIMER1_OVF_vect)
 }
 
 #endif
+
 ///////////////////////////////////////////////////////////////
 //////////////////////     HUE -> RGB    //////////////////////
 ///////////////////////////////////////////////////////////////
