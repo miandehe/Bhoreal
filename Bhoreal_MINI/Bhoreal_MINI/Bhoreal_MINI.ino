@@ -6,11 +6,9 @@
 ///////////////////////////////////////////////////////
 
 #include <Arduino.h>
-#include "Bhoreal.h"
-#include <Wire.h>
-#include <EEPROM.h>
+#include <BhorealMini.h>
 
-Bhoreal Bhoreal;
+BhorealMini Bhoreal;
 
 void setup() {
   Bhoreal.begin();

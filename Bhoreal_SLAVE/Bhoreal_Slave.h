@@ -1,10 +1,10 @@
 #include <Arduino.h>
-#include <Wire.h>
 #include <avr/pgmspace.h>
 #include <avr/sleep.h>
 #include <avr/power.h>
+#include <Wire.h>
 
-class Bhoreal {
+class BhorealSlave {
   public:  
     void begin();
     void check();
@@ -15,6 +15,10 @@ class Bhoreal {
     void sleep();
     void masterSend(byte val);
   private:
-
+    void timer1SetPeriod(long microseconds);
+    //Variables for timer1
+    unsigned int pwmPeriod;
+    unsigned char clockSelectBits;
+    char oldSREG;                   // To hold Status 
 
 };

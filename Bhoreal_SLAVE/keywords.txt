@@ -1,0 +1,23 @@
+#######################################
+# Syntax Coloring Map For Bhoreal
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+BhorealSlim	KEYWORD1	BhorealSlimLibrary
+BhorealMini	KEYWORD1	BhorealMiniLibrary
+BhorealSlave	KEYWORD1	BhorealSlaveLibrary
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+begin	KEYWORD2
+check	KEYWORD2
+chargeBatterry	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################

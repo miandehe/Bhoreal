@@ -13,7 +13,7 @@
 #define  MODEL  SLIMPRO //Modelo
 //#define  MODEL  SLIM //Modelo
 
-class Bhoreal {
+class BhorealSlim {
   public:  
   
     // Constructor: number of LEDs, pin number, LED type

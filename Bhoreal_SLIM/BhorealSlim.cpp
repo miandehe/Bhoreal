@@ -1,10 +1,10 @@
 
-#include "bhoreal.h"
+#include "bhorealSlim.h"
 #include "Constants.h"
 #include <EEPROM.h>
 
 
-Bhoreal Bhoreal_;
+BhorealSlim Bhoreal_;
 uint8_t pixels[numBytes];
 uint32_t baud[3]={57600, 9600, 115200};
 
@@ -121,13 +121,13 @@ byte remapMATRIX[4][8][8] =
 };
 
 
-void Bhoreal::slaveSend(byte val) {
+void BhorealSlim::slaveSend(byte val) {
    Wire.beginTransmission(4); //start transmission to device 
    Wire.write(val);        // write value to write
    Wire.endTransmission(); //end transmission
 }
 
-byte Bhoreal::slaveRead(byte reg) 
+byte BhorealSlim::slaveRead(byte reg) 
   {
     unsigned long time_on = millis();
     slaveSend(reg);
@@ -142,7 +142,7 @@ byte Bhoreal::slaveRead(byte reg)
 //////////////////////       BHOREAL BEGIN      //////////////////////
 //////////////////////////////////////////////////////////////////////
 
-void Bhoreal::begin()
+void BhorealSlim::begin()
 {
     port = portOutputRegister(digitalPinToPort(PIN_LED));
     pinMask = digitalPinToBitMask(PIN_LED);
@@ -269,7 +269,7 @@ void Bhoreal::begin()
 }
 
 #if (MODEL == SLIMPRO)
-  void Bhoreal::config(){
+  void BhorealSlim::config(){
     if (!compareData(__TIME__, readData(EE_ADDR_TIME_VERSION)))
     {
       writeData(EE_ADDR_TIME_VERSION, __TIME__);
@@ -286,7 +286,7 @@ void Bhoreal::begin()
   }
 #endif
 
-boolean Bhoreal::compareData(char* text, char* text1)
+boolean BhorealSlim::compareData(char* text, char* text1)
 {
   if ((strlen(text))!=(strlen(text1))) return false;
   else 
@@ -299,7 +299,7 @@ boolean Bhoreal::compareData(char* text, char* text1)
   return true;
 }
 
-char* Bhoreal::readData(uint16_t eeaddress)
+char* BhorealSlim::readData(uint16_t eeaddress)
 {
   uint16_t i;
   uint8_t temp = EEPROM.read(eeaddress);
@@ -312,7 +312,7 @@ char* Bhoreal::readData(uint16_t eeaddress)
   return buffer;
 }
 
-void Bhoreal::writeData(uint32_t eeaddress, char* text)
+void BhorealSlim::writeData(uint32_t eeaddress, char* text)
 {
   for (uint16_t i = eeaddress; i< (eeaddress + buffer_length); i++) EEPROM.write(i, 0x00);
   for (uint16_t i = eeaddress; text[i - eeaddress]!= 0x00; i++) 
@@ -326,7 +326,7 @@ void Bhoreal::writeData(uint32_t eeaddress, char* text)
 ////////////////////////////////////////////////////////////////
 
 // Run this animation once at startup. Currently unfinished.
-void Bhoreal::startup(){
+void BhorealSlim::startup(){
   
   for(int x = 0; x < NUM_LEDS; ++x){ 
     #if (MODEL == SLIM) || (MODEL == SLIMPRO)
@@ -355,7 +355,7 @@ void Bhoreal::startup(){
 //////////////////////////////////////////////////////////////////////
 
 byte value_send = 0;
-void Bhoreal::on_press(byte r, byte c, byte sel){
+void BhorealSlim::on_press(byte r, byte c, byte sel){
   #if (MODEL == SLIM) || (MODEL == SLIMPRO)
     value_send = remapMATRIX[GIR][c][r];
     if (sel == MIDI) 
@@ -377,7 +377,7 @@ void Bhoreal::on_press(byte r, byte c, byte sel){
 
 }
 
-void Bhoreal::on_release(byte r, byte c, byte sel){
+void BhorealSlim::on_release(byte r, byte c, byte sel){
   #if (MODEL == SLIM) || (MODEL == SLIMPRO)
     value_send = remapMATRIX[GIR][c][r];
     if (sel == MIDI) 
@@ -397,12 +397,12 @@ void Bhoreal::on_release(byte r, byte c, byte sel){
   #endif
 }
 
-void Bhoreal::on_press(byte r, byte c){
+void BhorealSlim::on_press(byte r, byte c){
     MIDIEvent e1 = { 0x09, 0x90, ((c << 2) | r) , 64  };
     MIDIUSB.write(e1);
 }
 
-void Bhoreal::on_release(byte r, byte c){
+void BhorealSlim::on_release(byte r, byte c){
     MIDIEvent e1 = { 0x09, 0x90, ((c << 2) | r) , 0  };
     MIDIUSB.write(e1);
 }
@@ -421,7 +421,7 @@ unsigned long time_button = 0;
   const byte modeMAX = 4;
 #endif
 
-void Bhoreal::checkButtons(){
+void BhorealSlim::checkButtons(){
     #if (MODEL == SLIM) || (MODEL == SLIMPRO)
       switch (mode) {
         case 0:
@@ -495,7 +495,7 @@ void Bhoreal::checkButtons(){
   
   int mode_ant = mode - 1;
     
-  void Bhoreal::checkMatrix(byte sel)
+  void BhorealSlim::checkMatrix(byte sel)
   {
      #if (MODEL == SLIMPRO) 
        if (sel==UDP) timer1Initialize();
@@ -549,7 +549,7 @@ void Bhoreal::checkButtons(){
 ////////////////////////////////////////////////////////////////
 byte refresh_led = 0;
 unsigned long time_led = 0;
-void Bhoreal::displayRefresh(){ 
+void BhorealSlim::displayRefresh(){ 
   if (((refresh_led>0)&&((micros()-time_led)>1000))||(refresh_led>=NUM_LEDS)||((refresh_led<NUM_LEDS)&&((micros()-time_led)>25000))&&(refresh_led>0))
     {
       refresh_led=0;
@@ -561,7 +561,7 @@ void Bhoreal::displayRefresh(){
 ////////////////////// REFRESH MIDI & LED  /////////////////////
 ////////////////////////////////////////////////////////////////
 
-  void Bhoreal::midiRefresh(){ 
+  void BhorealSlim::midiRefresh(){ 
       while(MIDIUSB.available() > 0) 
       {
         MIDIEvent e;
@@ -612,14 +612,14 @@ void Bhoreal::displayRefresh(){
 ////////////////////////////////////////////////////////////////
 
 #if (MODEL == SLIM) || (MODEL == SLIMPRO)
-      float Bhoreal::readBattery()
+      float BhorealSlim::readBattery()
         {
           return analogRead(VBAT)*(VCC_BATTERY/RESOLUTION);
         }
         
       //---------------- Functions
       //Writes val to address register on device
-      void Bhoreal::writeTo(int device, byte address, byte val) {
+      void BhorealSlim::writeTo(int device, byte address, byte val) {
          Wire.beginTransmission(device); //start transmission to device 
          Wire.write(address);        // write register address
          Wire.write(val);        // write value to write
@@ -627,7 +627,7 @@ void Bhoreal::displayRefresh(){
       }
       
       //reads num bytes starting from address register on device in to buff array
-      void Bhoreal::readFrom(int device, byte address, int num, byte buff[]) {
+      void BhorealSlim::readFrom(int device, byte address, int num, byte buff[]) {
         Wire.beginTransmission(device); //start transmission to device 
         Wire.write(address);        //writes address to read from
         Wire.endTransmission(); //end transmission
@@ -649,7 +649,7 @@ void Bhoreal::displayRefresh(){
       byte buff[TO_READ] ;    //6 bytes buffer for saving data read from the device
 #endif
 
-void Bhoreal::checkADC(){
+void BhorealSlim::checkADC(){
     #if (MODEL == SLIM) || (MODEL == SLIMPRO)   
             checkBattery();
             readFrom(DEVICE, regAddress, TO_READ, buff); //read the acceleration data from the ADXL345
@@ -697,7 +697,7 @@ void Bhoreal::checkADC(){
   boolean charge_state = false;
   float charge = 0;
   
-  void Bhoreal::checkBattery()
+  void BhorealSlim::checkBattery()
       {
         #if (MODEL == SLIMPRO)
           #if BAT_MONITOR
@@ -753,7 +753,7 @@ void setPeriodTimer1(long microseconds)		// AR modified for atomic access
 }
 
 
-void Bhoreal::timer1Initialize()
+void BhorealSlim::timer1Initialize()
 {
   TCCR1A = 0;                 // clear control register A 
   TCCR1B = _BV(WGM13);        // set mode 8: phase and frequency correct pwm, stop the timer
@@ -785,7 +785,7 @@ ISR(TIMER1_OVF_vect)
   uint8_t gh;
   uint8_t bh;
   
-uint32_t Bhoreal::hue2rgb(uint16_t hueValue)
+uint32_t BhorealSlim::hue2rgb(uint16_t hueValue)
 {
       if (hueValue==0)
         {
@@ -953,12 +953,12 @@ void SkipRemainderOfResponse(unsigned int timeOut) {
   }
 }
 
-void Bhoreal::WIFIsleep() {
+void BhorealSlim::WIFIsleep() {
       EnterCommandMode();
       SendCommand(F("sleep"));
 }
 
-char* Bhoreal::itoa(int32_t number)
+char* BhorealSlim::itoa(int32_t number)
   {
    byte count = 0;
    uint32_t temp;
@@ -982,11 +982,11 @@ char* Bhoreal::itoa(int32_t number)
    return buffer;   
   }
   
-void Bhoreal::sleep() {
+void BhorealSlim::sleep() {
       digitalWrite(POWER_VCC, HIGH); 
 }
 
-boolean Bhoreal::awake() {
+boolean BhorealSlim::awake() {
       PORTD &= B11101111; //digitalWrite(POWER_VCC, LOW); 
       //delay(500);
       writeTo(DEVICE, 0x2D, 0x08);
@@ -1012,7 +1012,7 @@ boolean Ready()
   else return(false);
 }
 
-boolean Bhoreal::Connect()
+boolean BhorealSlim::Connect()
   {
     if (!Ready())
     {
@@ -1023,7 +1023,7 @@ boolean Bhoreal::Connect()
 
 
   
-boolean Bhoreal::apMode()
+boolean BhorealSlim::apMode()
   {
       if(EnterCommandMode())
         {    
@@ -1083,7 +1083,7 @@ boolean Bhoreal::apMode()
         return false;   
   }
   
-boolean Bhoreal::reConnect()
+boolean BhorealSlim::reConnect()
   {
       if(EnterCommandMode())
         {    
@@ -1145,7 +1145,7 @@ boolean Bhoreal::reConnect()
         return false;   
   }
   
-  boolean Bhoreal::reset() {
+  boolean BhorealSlim::reset() {
     if (EnterCommandMode())
       {
         SendCommand(F("factory R"), false, "Set Factory Defaults"); // Store settings
@@ -1155,7 +1155,7 @@ boolean Bhoreal::reConnect()
       }
   }
 
-  int Bhoreal::checkWiFly() {
+  int BhorealSlim::checkWiFly() {
     int ver = getWiFlyVersion();
     if (ver > 0)
     {
@@ -1175,7 +1175,7 @@ boolean Bhoreal::reConnect()
   
   #define MAC_ADDRESS_BUFFER_SIZE 18 // "FF:FF:FF:FF:FF:FF\0"
   
-  char* Bhoreal::getMAC() {
+  char* BhorealSlim::getMAC() {
     if (EnterCommandMode()) 
     {
       if (SendCommand(F("get mac"), false, "Mac Addr="))
@@ -1206,7 +1206,7 @@ boolean Bhoreal::reConnect()
     return buffer;
   }
   
-  char* Bhoreal::getIP() {
+  char* BhorealSlim::getIP() {
     if (EnterCommandMode()) 
     {
       if (SendCommand(F("get ip"), false, "IP="))
@@ -1237,7 +1237,7 @@ boolean Bhoreal::reConnect()
     return buffer;
   }
   
-  int Bhoreal::getWiFlyVersion() {
+  int BhorealSlim::getWiFlyVersion() {
     if (EnterCommandMode()) 
     {
       if (SendCommand(F("ver"), false, "wifly-GSX Ver"))
@@ -1274,7 +1274,7 @@ boolean Bhoreal::reConnect()
   }
   
   
-  boolean Bhoreal::update() {
+  boolean BhorealSlim::update() {
     if (EnterCommandMode())
     {
       Serial.println("Actualizando modulo WIFI...");
@@ -1288,7 +1288,7 @@ boolean Bhoreal::reConnect()
     else return false;
   }
   
-  void Bhoreal::BaudSetup()
+  void BhorealSlim::BaudSetup()
   {
 //    while (Serial1.available()) Serial1.read();
     if(!EnterCommandMode())
@@ -1315,7 +1315,7 @@ boolean Bhoreal::reConnect()
   }
 
   
-  void Bhoreal::WIFISend(byte value, boolean state)
+  void BhorealSlim::WIFISend(byte value, boolean state)
   {
     //byte val = (state<<7)|((r << 3) | c);
     Serial1.write((state<<7)|value);
@@ -1324,7 +1324,7 @@ boolean Bhoreal::reConnect()
 
   boolean connected = false;
 
-  boolean Bhoreal::open(const char *addr, int port) {
+  boolean BhorealSlim::open(const char *addr, int port) {
   
     if (connected) {
       close();
@@ -1346,7 +1346,7 @@ boolean Bhoreal::reConnect()
     return false;
   }
   
-  boolean Bhoreal::close() {
+  boolean BhorealSlim::close() {
     if (!connected) {
       return true;
     }
@@ -1368,18 +1368,18 @@ boolean Bhoreal::reConnect()
 //Esta interrupcion no esta soportada por la libreria arcore
 
 #if (MODEL == SLIM) || (MODEL == SLIMPRO)
-  void Bhoreal::AttachInterrupt6(int mode)
+  void BhorealSlim::AttachInterrupt6(int mode)
   {
       EICRB = (EICRB & ~((1<<ISC60) | (1<<ISC61))) | (mode << ISC60);
       EIMSK |= (1<<INT6);
   }
   
-  void Bhoreal::detachInterrupt6()
+  void BhorealSlim::detachInterrupt6()
   {
       EIMSK &= ~(1<<INT6);
   }
   
-  void Bhoreal::sleepNow()         // here we put the arduino to sleep
+  void BhorealSlim::sleepNow()         // here we put the arduino to sleep
   {    
       delay(100);
       cli();
@@ -1422,7 +1422,7 @@ boolean Bhoreal::reConnect()
   ///////////////////////////////////////////////////////////////    
   
   #if (MODEL == SLIM) || (MODEL == SLIMPRO)
-    void Bhoreal::programMode()
+    void BhorealSlim::programMode()
     {
       unsigned long time = 0;
       boolean flagprog = false;
@@ -1488,7 +1488,7 @@ boolean Bhoreal::reConnect()
 //////////////////////       Demo        //////////////////////
 ///////////////////////////////////////////////////////////////  
 
-void Bhoreal::demoAccel()
+void BhorealSlim::demoAccel()
 {  
   #if (MODEL == SLIMPRO) 
     timer1Stop();
@@ -1523,7 +1523,7 @@ void Bhoreal::demoAccel()
 #endif
 
 #if (MODEL == SLIM) || (MODEL == SLIMPRO)
-  void Bhoreal::white()
+  void BhorealSlim::white()
   { 
     #if (MODEL == SLIMPRO)
       timer1Stop(); 
@@ -1540,7 +1540,7 @@ void Bhoreal::demoAccel()
     #endif
   }
 
-  void Bhoreal::printChar(byte value, byte pos)
+  void BhorealSlim::printChar(byte value, byte pos)
   {
     for (int i=0; i<8; i++)
       {
@@ -1553,7 +1553,7 @@ void Bhoreal::demoAccel()
       show();
   }
   
-  void Bhoreal::printChar(char* text)
+  void BhorealSlim::printChar(char* text)
   {
     for (int x=0; x<64; x++) 
     {
@@ -1571,7 +1571,7 @@ void Bhoreal::demoAccel()
 //////////////////////    Control led    //////////////////////
 ///////////////////////////////////////////////////////////////  
 
-void Bhoreal::show(void) {
+void BhorealSlim::show(void) {
 
   if(!pixels) return;
 
@@ -1654,7 +1654,7 @@ void Bhoreal::show(void) {
 }
 
 // Set pixel color from separate R,G,B components:
-void Bhoreal::setPixelColor(
+void BhorealSlim::setPixelColor(
  uint16_t n, uint8_t r, uint8_t g, uint8_t b) {
   if(n < NUM_LEDS) {
     uint8_t *p = &pixels[n * 3];
@@ -1673,7 +1673,7 @@ void Bhoreal::setPixelColor(
   byte ledNumber = 0;
   uint32_t color;
   uint8_t red, green, blue;
-  void Bhoreal::WIFIRead()
+  void BhorealSlim::WIFIRead()
     {
      while ((Serial1.available())&&(mode!=0))
       {
@@ -1699,7 +1699,7 @@ void Bhoreal::setPixelColor(
       }
     }
 
-  void Bhoreal::serialRequests()
+  void BhorealSlim::serialRequests()
   {
 //    sei();
     Bhoreal_.timer1Stop();
@@ -1717,7 +1717,7 @@ void Bhoreal::setPixelColor(
   unsigned char clockSelectBits;
   char oldSREG;					// To hold Status 
   
-  void Bhoreal::timer1SetPeriod(long microseconds)		// AR modified for atomic access
+  void BhorealSlim::timer1SetPeriod(long microseconds)		// AR modified for atomic access
   {
   
     long cycles = (F_CPU / 2000000) * microseconds;                                // the counter runs backwards after TOP, interrupt is at BOTTOM so divide microseconds by 2
@@ -1737,7 +1737,7 @@ void Bhoreal::setPixelColor(
     TCCR1B |= clockSelectBits;                                          // reset clock select register, and starts the clock
   }
   
-  void Bhoreal::timer1Initialize()
+  void BhorealSlim::timer1Initialize()
   {
     TCCR1A = 0;                 // clear control register A 
     TCCR1B = _BV(WGM13);        // set mode 8: phase and frequency correct pwm, stop the timer
@@ -1745,7 +1745,7 @@ void Bhoreal::setPixelColor(
     TIMSK1 = _BV(TOIE1);                                  
   }
   
-  void Bhoreal::timer1Stop()
+  void BhorealSlim::timer1Stop()
   {
     TCCR1B &= ~(_BV(CS10) | _BV(CS11) | _BV(CS12));          // clears all clock selects bits
     TIMSK1 &= ~(_BV(TOIE1));     
@@ -1763,7 +1763,7 @@ char icon[65] = {0,0,0,0,0,0,0,0,
                  0,0,0,0,0,0,0,0,
                  0,0,0,0,0,0,0,0};
 
-void Bhoreal::checkServer() {
+void BhorealSlim::checkServer() {
   timer1Stop();
   protocolDefine(HTML + TCP);
   while ((mode==6)&&(WIFIMode==NORMAL))
@@ -1825,7 +1825,7 @@ void Bhoreal::checkServer() {
 #endif
 
 #if (MODEL == SLIM) || (MODEL == SLIMPRO)
-  void Bhoreal::selectMode() {
+  void BhorealSlim::selectMode() {
     #if (MODEL == SLIMPRO) 
       timer1Stop();
     #endif
@@ -1884,7 +1884,7 @@ void Bhoreal::checkServer() {
 #endif
 
 #if (MODEL == SLIMPRO) 
-  void Bhoreal::protocolDefine(byte protocol)
+  void BhorealSlim::protocolDefine(byte protocol)
     {
       if(EnterCommandMode())
           {               

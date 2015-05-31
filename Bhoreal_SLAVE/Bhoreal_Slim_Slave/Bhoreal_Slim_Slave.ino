@@ -7,7 +7,7 @@
 #include "Bhoreal_Slave.h"
 #include <Wire.h>
 
-Bhoreal Bhoreal;
+BhorealSlave Bhoreal;
 
 void setup() {
   Bhoreal.begin();

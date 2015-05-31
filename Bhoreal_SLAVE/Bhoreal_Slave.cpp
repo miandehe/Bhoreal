@@ -1,5 +1,5 @@
 #include "bhoreal_Slave.h"
-
+#include <Wire.h>
 // Auxiliary analog output definitions
 #define VBAT A0 //BATERIA
 #define GATE_CMD 15
@@ -15,7 +15,7 @@
 #define BAT_CH  2000  //Voltage retry recharge
 #define RESOLUTION 1023.  //Reslution for ADC
     
-Bhoreal Bhoreal_;
+BhorealSlave Bhoreal__;
 
 void sleepNow()         // here we put the arduino to sleep
 {   
@@ -32,9 +32,9 @@ void sleepNow()         // here we put the arduino to sleep
 }
 
 
-void Bhoreal::sleep()         // here we put the arduino to sleep
+void BhorealSlave::sleep()         // here we put the arduino to sleep
 {
-  Bhoreal_.timer1Stop();
+  Bhoreal__.timer1Stop();
   
   PORTB |= B00011001;
   PORTD |= B11111000;
@@ -58,10 +58,10 @@ void i2cEvent(int howMany)
       {
         
         case 1:
-          Bhoreal_.timer1Initialize();
+          Bhoreal__.timer1Initialize();
           break;
         case 2:
-          Bhoreal_.sleep();
+          Bhoreal__.sleep();
           sleepNow();
           break;
         case 3:
@@ -87,7 +87,7 @@ void requestEvent()
 
 unsigned long time_charge;
 
-void Bhoreal::begin()
+void BhorealSlave::begin()
   {
 
 //    pinMode(GATE_CMD, INPUT); //15, PC1
@@ -122,7 +122,7 @@ void Bhoreal::begin()
 
 boolean charge_state = true;
 
-void Bhoreal::chargeBatterry()
+void BhorealSlave::chargeBatterry()
   {
     if (analogRead(VUSB)>500)
       {
@@ -155,7 +155,7 @@ void Bhoreal::chargeBatterry()
 boolean fullcolor = false;
 unsigned long time_full;
 
-void Bhoreal::check()
+void BhorealSlave::check()
   {       
     /* Modo full color pasados 2 segundos de seguridad*/
     if (digitalRead(GATE_CMD))
@@ -173,19 +173,16 @@ void Bhoreal::check()
     ////////////////////////////////////////////////////
   }
 
-float Bhoreal::readBattery()
+float BhorealSlave::readBattery()
   {
     return analogRead(VBAT)*(VCC/RESOLUTION);
   }
   
 #define RESOLUTION 65536    // Timer1 is 16 bit
-unsigned int pwmPeriod;
-    unsigned char clockSelectBits;
-	char oldSREG;					// To hold Status 
 
-void setPeriodTimer1(long microseconds)		// AR modified for atomic access
+
+void BhorealSlave::timer1SetPeriod(long microseconds)		// AR modified for atomic access
 {
-  
   long cycles = (F_CPU / 2000000) * microseconds;                                // the counter runs backwards after TOP, interrupt is at BOTTOM so divide microseconds by 2
   if(cycles < RESOLUTION)              clockSelectBits = _BV(CS10);              // no prescale, full xtal
   else if((cycles >>= 3) < RESOLUTION) clockSelectBits = _BV(CS11);              // prescale by /8
@@ -204,15 +201,15 @@ void setPeriodTimer1(long microseconds)		// AR modified for atomic access
 }
 
 
-void Bhoreal::timer1Initialize()
+void BhorealSlave::timer1Initialize()
 {
     TCCR1A = 0;                 // clear control register A 
     TCCR1B = _BV(WGM13);        // set mode 8: phase and frequency correct pwm, stop the timer
-    setPeriodTimer1(5); 
+    timer1SetPeriod(5); 
     TIMSK1 = _BV(TOIE1);                                     
 }
 
-void Bhoreal::timer1Stop()
+void BhorealSlave::timer1Stop()
 {
   TIMSK1 &= ~_BV(TOIE1);                                   // clears the timer overflow interrupt enable bit 
 }
@@ -280,7 +277,7 @@ ISR(TIMER1_OVF_vect)
   } 
 }
 
-void Bhoreal::masterSend(byte val) {
+void BhorealSlave::masterSend(byte val) {
    Wire.beginTransmission(3); //start transmission to device 
    Wire.write(val);        // write value to write
    Wire.endTransmission(); //end transmission
