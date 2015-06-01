@@ -256,7 +256,7 @@ void BhorealSlim::begin()
     pinMode(PIN_LED, OUTPUT);
     digitalWrite(PIN_LED, LOW);
     // Start the serial port
-    Serial.begin(BAUD);  
+    Serial.begin(115200);  
     
     PORTE |= B01000000;
     DDRE  |= B01000000;
@@ -399,11 +399,13 @@ void BhorealSlim::on_release(byte r, byte c, byte sel){
 
 void BhorealSlim::on_press(byte r, byte c){
     MIDIEvent e1 = { 0x09, 0x90, ((c << 2) | r) , 64  };
+	Serial.println(1);
     MIDIUSB.write(e1);
 }
 
 void BhorealSlim::on_release(byte r, byte c){
     MIDIEvent e1 = { 0x09, 0x90, ((c << 2) | r) , 0  };
+	Serial.println(0);
     MIDIUSB.write(e1);
 }
 

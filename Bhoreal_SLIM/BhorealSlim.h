@@ -11,7 +11,7 @@
 
 //#define  MODEL  MINISLIM //Modelo
 #define  MODEL  SLIMPRO //Modelo
-//#define  MODEL  SLIM //Modelo
+// #define  MODEL  SLIM //Modelo
 
 class BhorealSlim {
   public:  

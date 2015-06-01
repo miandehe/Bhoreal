@@ -22,11 +22,22 @@
 BhorealMini Bhoreal_;
 uint8_t pixels[numBytes];
 
-boolean pressed[4][4] = {      // pushbottons states matrix
-  {1,1,1,1},
-  {1,1,1,1},
-  {1,1,1,1},
-  {1,1,1,1}
+// boolean pressed[4][4] = {      // pushbottons states matrix
+  // {1,1,1,1},
+  // {1,1,1,1},
+  // {1,1,1,1},
+  // {1,1,1,1}
+// };
+
+boolean pressed[8][8] = {      // pushbottons states matrix
+  {1,1,1,1,1,1,1,1},
+  {1,1,1,1,1,1,1,1},
+  {1,1,1,1,1,1,1,1},
+  {1,1,1,1,1,1,1,1},
+  {1,1,1,1,1,1,1,1},
+  {1,1,1,1,1,1,1,1},
+  {1,1,1,1,1,1,1,1},
+  {1,1,1,1,1,1,1,1}
 };
 
 const byte remap[4][4] =    // mapping matrix for Mini
@@ -59,6 +70,7 @@ void BhorealMini::begin()
     DDRE  |= B01000000;
     PORTB |= B00000010;
     DDRB  |= B00000010;
+	
     // Setup the timer interrupt
     timer1Initialize();   
 }
@@ -104,10 +116,8 @@ void BhorealMini::on_release(byte r, byte c){
 byte count_column = 0;
 byte count_file = 0;
 unsigned long time_button = 0;
-const byte modeMAX = 4;
 
 void BhorealMini::checkButtons(){
-      midiRefresh();
       if ((micros()-time_button)>1000)
         {
           time_button = micros();

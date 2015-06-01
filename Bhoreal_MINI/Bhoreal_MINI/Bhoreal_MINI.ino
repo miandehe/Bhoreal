@@ -18,6 +18,8 @@ void setup() {
   
 void loop () {
  
+  Bhoreal.midiRefresh();
+  
   Bhoreal.checkButtons();
   // Check and report the ADC states, if necessary
   Bhoreal.checkADC();
