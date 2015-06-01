@@ -15,9 +15,13 @@ BhorealSlave	KEYWORD1	BhorealSlaveLibrary
 #######################################
 
 begin	KEYWORD2
+wifiBegin	KEYWORD2
 startup	KEYWORD2
-checkButtons	KEYWORD2
-checkADC	KEYWORD2
+checkMenu	KEYWORD2
+checkButtonsMIDI	KEYWORD2
+checkButtonsUDP	KEYWORD2
+midiRefresh	KEYWORD2
+checkAccel	KEYWORD2
 displayRefresh	KEYWORD2
 
 #######################################

@@ -142,31 +142,31 @@ byte BhorealSlim::slaveRead(byte reg)
 //////////////////////       BHOREAL BEGIN      //////////////////////
 //////////////////////////////////////////////////////////////////////
 
-void BhorealSlim::begin()
+void BhorealSlim::begin(boolean battery)
 {
     port = portOutputRegister(digitalPinToPort(PIN_LED));
     pinMask = digitalPinToBitMask(PIN_LED);
-    
-  #if (MODEL == SLIM) || (MODEL == SLIMPRO)
-     
+	
     DDRB |= B11110000;  // 11,10,9,8 OUTPUT
     DDRC |= B01000000;  // 5  OUTPUT
     DDRC &= B01111111;  // 13 INPUT
     DDRE &= B10111111;  // 7 INPUT
     DDRD |= B11010000;  // 12, 6, 4 OUTPUT
     DDRF |= B00000011;  // A4, A5   OUTPUT
-    PORTF |= B00000010; //A4 HIGH
-    PORTF &= B11111110; //A5 LOW
+    PORTF |= B00000010; // A4 HIGH
+    PORTF &= B11111110; // A5 LOW
     PORTD |= B01010000; // 12, 4  HIGH
-    PORTD &= B01111111; //6 LOW
-    PORTB &= B01111111; //11 LOW, Reset atmega328 ON
+    PORTD &= B01111111; // 6 LOW
+    PORTB &= B01111111; // 11 LOW, Reset atmega328 ON
     PORTB |= B10000000; // 11 HIGH
 
     //Inicializa como encendido o apagado
     Wire.begin();    
     slaveRead(3);  //Check slave ON
+	
     //Gestion de sleep del Bhoreal
-    #if (MODEL == SLIMPRO) 
+    if (battery)
+	 {
         if ((EEPROM.read(EE_ADDR_POWER)>0)&&(compareData(__TIME__, readData(EE_ADDR_TIME_VERSION))))
           {
             EEPROM.write(EE_ADDR_POWER, 0);       
@@ -181,14 +181,26 @@ void BhorealSlim::begin()
         } 
       // Start the serial port   
       Serial.begin(57600); //USB inicializado a 57600 
-    #else
-      #if (MODEL == SLIM) 
+	 }
+    else
+	 {
         PORTD &= B11101111; //digitalWrite(POWER_VCC, LOW);
         slaveSend(1); //Activa atmega328
-      #endif
-    #endif
+	 }
+    
+    show();
+	
+    writeTo(DEVICE, 0x2D, 0x08);
+//  writeTo(DEVICE, 0x31, 0x00); //2g
+//  writeTo(DEVICE, 0x31, 0x01); //4g
+    writeTo(DEVICE, 0x31, 0x02); //8g
+//  writeTo(DEVICE, 0x31, 0x03); //16g
+    //AttachInterrupt6(RISING); //Cambio de 0 a 1
+}
+
+void BhorealSlim::wifiBegin()
+{
     // Start the wifi
-    #if (MODEL == SLIMPRO)
       Serial1.begin(baud[0]); //WIFI inicializado a 57600
       #if BAT_MONITOR
         if ((readBattery()<2000)||(slaveRead(3)>0)) //Low battery level or usb connected
@@ -235,39 +247,8 @@ void BhorealSlim::begin()
           sleep();
         } 
        timer1Initialize();  
-    #endif
-    
-    show();
-
-    writeTo(DEVICE, 0x2D, 0x08);
-//  writeTo(DEVICE, 0x31, 0x00); //2g
-//  writeTo(DEVICE, 0x31, 0x01); //4g
-    writeTo(DEVICE, 0x31, 0x02); //8g
-//  writeTo(DEVICE, 0x31, 0x03); //16g
-    //AttachInterrupt6(RISING); //Cambio de 0 a 1
-    AttachInterrupt6(CHANGE); //Cambio de 0 a 1
-  #else
-    for(byte i = 0; i<4; i++) 
-    {
-      pinMode(column[i], INPUT);
-      pinMode(row[i], OUTPUT);
-      digitalWrite(row[i], LOW);
-    }
-    pinMode(PIN_LED, OUTPUT);
-    digitalWrite(PIN_LED, LOW);
-    // Start the serial port
-    Serial.begin(115200);  
-    
-    PORTE |= B01000000;
-    DDRE  |= B01000000;
-    PORTB |= B00000010;
-    DDRB  |= B00000010;
-    
-    // Setup the timer interrupt
-    timer1Initialize();   
-  #endif
-}
-
+	AttachInterrupt6(CHANGE); //Cambio de 0 a 1
+}	
 #if (MODEL == SLIMPRO)
   void BhorealSlim::config(){
     if (!compareData(__TIME__, readData(EE_ADDR_TIME_VERSION)))
@@ -328,25 +309,16 @@ void BhorealSlim::writeData(uint32_t eeaddress, char* text)
 // Run this animation once at startup. Currently unfinished.
 void BhorealSlim::startup(){
   
-  for(int x = 0; x < NUM_LEDS; ++x){ 
-    #if (MODEL == SLIM) || (MODEL == SLIMPRO)
-      uint32_t c = hue2rgb((x+1)*2);  // 128 HUE steps / 64 leds, 2 steps x led
-      if (x == (NUM_LEDS-1)) c = hue2rgb(1);  // 128 HUE steps / 64 leds, 2 steps x led
-      uint8_t
-      r = (uint8_t)(c >> 16),
-      g = (uint8_t)(c >>  8),
-      b = (uint8_t)c;
-      setPixelColor(remapSlim[GIR][x>>3][x%8], r, g, b);
-    #else
-      uint32_t c = hue2rgb((x+1)*8); // 128 HUE steps / 16 leds, 8 steps x led
-      if (x == (NUM_LEDS-1)) c = hue2rgb(1);  // 128 HUE steps / 64 leds, 2 steps x led
-      uint8_t
-      r = (uint8_t)(c >> 16),
-      g = (uint8_t)(c >>  8),
-      b = (uint8_t)c;  
-      setPixelColor(remapMini[x>>2][x%4], r, g, b);
-    #endif
-  }  
+  for(int x = 0; x < NUM_LEDS; ++x)
+   { 
+	  uint32_t c = hue2rgb((x+1)*2);  // 128 HUE steps / 64 leds, 2 steps x led
+	  if (x == (NUM_LEDS-1)) c = hue2rgb(1);  // 128 HUE steps / 64 leds, 2 steps x led
+	  uint8_t
+	  r = (uint8_t)(c >> 16),
+	  g = (uint8_t)(c >>  8),
+	  b = (uint8_t)c;
+	  setPixelColor(remapSlim[GIR][x>>3][x%8], r, g, b);
+   }  
   show();
 }
 
@@ -356,7 +328,6 @@ void BhorealSlim::startup(){
 
 byte value_send = 0;
 void BhorealSlim::on_press(byte r, byte c, byte sel){
-  #if (MODEL == SLIM) || (MODEL == SLIMPRO)
     value_send = remapMATRIX[GIR][c][r];
     if (sel == MIDI) 
       {
@@ -369,16 +340,9 @@ void BhorealSlim::on_press(byte r, byte c, byte sel){
             WIFISend(value_send, 1);
         #endif
       }
-  #else
-    MIDIEvent e1 = { 0x09, 0x90, ((r << 2) | c) , 64  };
-      MIDIUSB.write(e1);
-  #endif
-
-
 }
 
 void BhorealSlim::on_release(byte r, byte c, byte sel){
-  #if (MODEL == SLIM) || (MODEL == SLIMPRO)
     value_send = remapMATRIX[GIR][c][r];
     if (sel == MIDI) 
       {
@@ -391,22 +355,6 @@ void BhorealSlim::on_release(byte r, byte c, byte sel){
             WIFISend(value_send, 0);
         #endif
       }
-  #else
-    MIDIEvent e1 = { 0x09, 0x90, ((r << 2) | c) , 0  };
-    MIDIUSB.write(e1);
-  #endif
-}
-
-void BhorealSlim::on_press(byte r, byte c){
-    MIDIEvent e1 = { 0x09, 0x90, ((c << 2) | r) , 64  };
-	Serial.println(1);
-    MIDIUSB.write(e1);
-}
-
-void BhorealSlim::on_release(byte r, byte c){
-    MIDIEvent e1 = { 0x09, 0x90, ((c << 2) | r) , 0  };
-	Serial.println(0);
-    MIDIUSB.write(e1);
 }
 
 
@@ -423,8 +371,7 @@ unsigned long time_button = 0;
   const byte modeMAX = 4;
 #endif
 
-void BhorealSlim::checkButtons(){
-    #if (MODEL == SLIM) || (MODEL == SLIMPRO)
+void BhorealSlim::checkMenu(){
       switch (mode) {
         case 0:
           selectMode();
@@ -468,83 +415,67 @@ void BhorealSlim::checkButtons(){
           break;
       #endif
         }
-    #else
-      midiRefresh();
-      if ((micros()-time_button)>1000)
-        {
-          time_button = micros();
-          for(int r= NUM_ROWS - 1; r >= 0; r--)
-          {
-            if(pressed[count_column][r] != digitalRead(column[r]))
-            { // read the state
-              //delay(1); // to prevent bounces!!!
-              pressed[count_column][r] = digitalRead(column[r]);
-              if(pressed[count_column][r]) on_press(count_column, r);
-              else on_release(count_column, r);
-            }
-          }
-          digitalWrite(row[count_column],LOW);
-          count_column++;
-          if (count_column>NUM_ROWS) count_column=0;
-          digitalWrite(row[count_column],HIGH);
-          
-        }
-    #endif
 }
 
-#if (MODEL == SLIM) || (MODEL == SLIMPRO)
-  byte r[8] = {4, 5, 6, 7, 0, 1, 2, 3};
+void BhorealSlim::checkButtonsMIDI()
+{
+	checkMatrix(MIDI);
+}
+
+void BhorealSlim::checkButtonsUDP()
+{
+	checkMatrix(UDP);
+}
+
+byte r[8] = {4, 5, 6, 7, 0, 1, 2, 3};
+
+int mode_ant = mode - 1;
+
+void BhorealSlim::checkMatrix(byte sel)
+{
+ if (sel==UDP) timer1Initialize();
+ else if(sel==MIDI)  timer1Stop();
+ 
+ PORTB &= B11101111; //digitalWrite(CLOCKPIN,LOW);
+ PORTB |= B00100000; //digitalWrite(DATAPIN, HIGH); 
+ for(byte c = 0; c < NUM_ROWS; c++)
+   {
+	PORTB |= B00010000; //digitalWrite(CLOCKPIN, HIGH);
   
-  int mode_ant = mode - 1;
-    
-  void BhorealSlim::checkMatrix(byte sel)
-  {
-     #if (MODEL == SLIMPRO) 
-       if (sel==UDP) timer1Initialize();
-       else if(sel==MIDI)  timer1Stop();
-     #endif
-     
-     PORTB &= B11101111; //digitalWrite(CLOCKPIN,LOW);
-     PORTB |= B00100000; //digitalWrite(DATAPIN, HIGH); 
-     for(byte c = 0; c < NUM_ROWS; c++)
-       {
-        PORTB |= B00010000; //digitalWrite(CLOCKPIN, HIGH);
-      
-        PORTB &= B10111111; //digitalWrite(INLOADPIN, LOW); // read into register
-        delayMicroseconds(1);
-        PORTB |= B01000000; //digitalWrite(INLOADPIN, HIGH); // done reading into register, ready for us to read
-        
-        for(int i= 0; i < NUM_ROWS; i++){ // read each of the 165's 4 inputs (or its snapshot of it rather)
-          // tell the 165 to send the first inputs pin state
-          PORTC &= B10111111; //digitalWrite(INCLOCKPIN, LOW);
-          // read the current output
-          if(pressed[c][r[i]] != PINC>>7){ //digitalRead(INDATAPIN)){ // read the state
-            pressed[c][r[i]] = PINC>>7; //digitalRead(INDATAPIN);
-            if(!pressed[c][r[i]]){
-              if (sel!=SELECTOR) on_press(c, r[i], sel);
-              else
-               {
-                 if ((c + r[i]*8)== 63) 
-                   {
-                     if (WIFIMode == NORMAL) WIFIMode = PROG_AP;
-                     else if (WIFIMode == AP) WIFIMode = PROG_NORMAL;
-                   }
-                 else if ((c + r[i]*8)== 62) charge_on=!charge_on;
-                 else if ((c + r[i]*8)<modeMAX) mode_ant = c + r[i]*8; 
-                 
-               }
-            }
-            else if (sel!=SELECTOR) on_release(c, r[i], sel);
-          }
-          // tell the 165 we are done reading the state, the next inclockpin=0 will output the next input value
-           PORTC |= B01000000; //digitalWrite(INCLOCKPIN, HIGH);
-        }
-        
-        PORTB &= B11101111; //digitalWrite(CLOCKPIN,LOW);
-        PORTB &= B11011111; //digitalWrite(DATAPIN, LOW);  
-       }
-  }
-#endif
+	PORTB &= B10111111; //digitalWrite(INLOADPIN, LOW); // read into register
+	delayMicroseconds(1);
+	PORTB |= B01000000; //digitalWrite(INLOADPIN, HIGH); // done reading into register, ready for us to read
+	
+	for(int i= 0; i < NUM_ROWS; i++){ // read each of the 165's 4 inputs (or its snapshot of it rather)
+	  // tell the 165 to send the first inputs pin state
+	  PORTC &= B10111111; //digitalWrite(INCLOCKPIN, LOW);
+	  // read the current output
+	  if(pressed[c][r[i]] != PINC>>7){ //digitalRead(INDATAPIN)){ // read the state
+		pressed[c][r[i]] = PINC>>7; //digitalRead(INDATAPIN);
+		if(!pressed[c][r[i]]){
+		  if (sel!=SELECTOR) on_press(c, r[i], sel);
+		  else
+		   {
+			 if ((c + r[i]*8)== 63) 
+			   {
+				 if (WIFIMode == NORMAL) WIFIMode = PROG_AP;
+				 else if (WIFIMode == AP) WIFIMode = PROG_NORMAL;
+			   }
+			 else if ((c + r[i]*8)== 62) charge_on=!charge_on;
+			 else if ((c + r[i]*8)<modeMAX) mode_ant = c + r[i]*8; 
+			 
+		   }
+		}
+		else if (sel!=SELECTOR) on_release(c, r[i], sel);
+	  }
+	  // tell the 165 we are done reading the state, the next inclockpin=0 will output the next input value
+	   PORTC |= B01000000; //digitalWrite(INCLOCKPIN, HIGH);
+	}
+	
+	PORTB &= B11101111; //digitalWrite(CLOCKPIN,LOW);
+	PORTB &= B11011111; //digitalWrite(DATAPIN, LOW);  
+   }
+}
 
 ////////////////////////////////////////////////////////////////
 //////////////////////    REFRESH LED     //////////////////////
@@ -566,226 +497,121 @@ void BhorealSlim::displayRefresh(){
   void BhorealSlim::midiRefresh(){ 
       while(MIDIUSB.available() > 0) 
       {
-        MIDIEvent e;
-        e = MIDIUSB.read();
-        #if (MODEL == SLIM) || (MODEL == SLIMPRO)
-            if((e.type == 0x09) && (e.m3))  // NoteON midi message with vel > 0
-            {  
-              uint32_t c = hue2rgb(e.m3);  // velocity is used to HUE color selection and HUE is converted to RGB uint32 
-              uint8_t
-                r = (uint8_t)(c >> 16),
-                g = (uint8_t)(c >>  8),
-                b = (uint8_t)c;
-              setPixelColor(remapSlim[GIR][e.m2>>3][e.m2%8], r, g, b);
-              refresh_led++;
-              time_led = micros();
-            }
-            else if( (e.type == 0x08) || ((e.type == 0x09) && !e.m3) ) // NoteOFF midi message
-            {  
-              setPixelColor(remapSlim[GIR][e.m2>>3][e.m2%8], 0, 0, 0);
-              refresh_led++;
-              time_led = micros();
-            }  
-        #else
-            if((e.type == 0x09) && (e.m3))  //  NoteON midi message with vel > 0
-            {  
-              uint32_t c = hue2rgb(e.m3);
-              uint8_t
-                r = (uint8_t)(c >> 16),
-                g = (uint8_t)(c >>  8),
-                b = (uint8_t)c;
-              setPixelColor(remapMini[e.m2>>2][e.m2%4], r, g, b);
-              refresh_led++;
-              time_led = micros();
-            }
-            else if( (e.type == 0x08) || ((e.type == 0x09) && !e.m3) ) // NoteOFF midi message
-            {  
-              setPixelColor(remapMini[e.m2>>2][e.m2%4], 0, 0, 0);
-              refresh_led++;
-              time_led = micros();
-            }
-        #endif 
-          }
+       MIDIEvent e;
+       e = MIDIUSB.read();
+	   if((e.type == 0x09) && (e.m3))  // NoteON midi message with vel > 0
+		{  
+		  uint32_t c = hue2rgb(e.m3);  // velocity is used to HUE color selection and HUE is converted to RGB uint32 
+		  uint8_t
+			r = (uint8_t)(c >> 16),
+			g = (uint8_t)(c >>  8),
+			b = (uint8_t)c;
+		  setPixelColor(remapSlim[GIR][e.m2>>3][e.m2%8], r, g, b);
+		  refresh_led++;
+		  time_led = micros();
+		}
+		else if( (e.type == 0x08) || ((e.type == 0x09) && !e.m3) ) // NoteOFF midi message
+		{  
+		  setPixelColor(remapSlim[GIR][e.m2>>3][e.m2%8], 0, 0, 0);
+		  refresh_led++;
+		  time_led = micros();
+		}  
+      }
   }
-
 
 ////////////////////////////////////////////////////////////////
 //////////////////////  CHECK ADC INPUTS  //////////////////////
 ////////////////////////////////////////////////////////////////
 
-#if (MODEL == SLIM) || (MODEL == SLIMPRO)
-      float BhorealSlim::readBattery()
-        {
-          return analogRead(VBAT)*(VCC_BATTERY/RESOLUTION);
-        }
-        
-      //---------------- Functions
-      //Writes val to address register on device
-      void BhorealSlim::writeTo(int device, byte address, byte val) {
-         Wire.beginTransmission(device); //start transmission to device 
-         Wire.write(address);        // write register address
-         Wire.write(val);        // write value to write
-         Wire.endTransmission(); //end transmission
-      }
-      
-      //reads num bytes starting from address register on device in to buff array
-      void BhorealSlim::readFrom(int device, byte address, int num, byte buff[]) {
-        Wire.beginTransmission(device); //start transmission to device 
-        Wire.write(address);        //writes address to read from
-        Wire.endTransmission(); //end transmission
-        
-        Wire.beginTransmission(device); //start transmission to device
-        Wire.requestFrom(device, num);    // request 6 bytes from device
-        
-        int i = 0;
-        while(Wire.available())    //device may write less than requested (abnormal)
-        { 
-          buff[i] = Wire.read(); // read a byte
-          i++;
-        }
-        Wire.endTransmission(); //end transmission
-      }
-      int x=0;
-      int y=0;
-      int z=0;     
-      byte buff[TO_READ] ;    //6 bytes buffer for saving data read from the device
-#endif
-
-void BhorealSlim::checkADC(){
-    #if (MODEL == SLIM) || (MODEL == SLIMPRO)   
-            checkBattery();
-            readFrom(DEVICE, regAddress, TO_READ, buff); //read the acceleration data from the ADXL345
-            x = (((int)buff[1]) << 8) | buff[0]; 
-            x = map(x,-lim,lim,0,1023);  
-            y = (((int)buff[3])<< 8) | buff[2];
-            y = map(y,-lim,lim,0,1023); 
-            z = (((int)buff[5]) << 8) | buff[4];
-            z = map(z,-lim,lim,0,1023); 
-            int limitx = map(x, 448, 575, 7, 0);
-            if (limitx==0) limitx =1;
-            int limity = map(y, 448, 575, 0, 7);
-            if (limity==7) limity=6;
-            if (limitx<2) GIR=2;
-            else if (limitx>5) GIR=0;
-            else if (limity<2) GIR=1;
-            else if (limity>5) GIR=3;  
-            //Serial.println(GIR);
-    #else
-        // For all of the ADC's which are activated, check if the analog value has changed,
-        // and send a message if it has.
-        if(adc[0]){
-          tempADC = (analogRead(ANALOG0) >> 2);
-          if(abs((int)analogval[0] - (int)tempADC) > 2 ){
-          //if(analogval[0] != (analogRead(ANALOG0) >> 2)){
-            //analogval[0] = (analogRead(ANALOG0) >> 2);
-            analogval[0] = tempADC;
-            // Send the control change message for the slider potentiometer,
-            // by defect we use CC64 controller
-            MIDIEvent e1 = {0x0B, 0xB0, 64, analogval[0]>>1};
-            MIDIUSB.write(e1);
-          }
-        }
-        
-        if(adc[1]){
-          if(analogval[1] != (analogRead(ANALOG1) >> 2)){
-            analogval[1] = (analogRead(ANALOG1) >> 2);
-          }
-        }
-    #endif
-}
-
-
-#if (MODEL == SLIM) || (MODEL == SLIMPRO)
-  boolean charge_state = false;
-  float charge = 0;
-  
-  void BhorealSlim::checkBattery()
-      {
-        #if (MODEL == SLIMPRO)
-          #if BAT_MONITOR
-            charge = readBattery();
-            if ((charge<(BAT_MIN - 300))&&(charge>2000)&&(!charge_state))
-            {        
-              charge_state = true;
-              slaveSend(2); //Duerme atmega328
-              sleep();
-              sleepNow();
-            }
-            else if (((charge>BAT_MIN)||(charge<2000))&&(charge_state))
-                     {
-                       charge_state = false;
-                       slaveRead(1); //Activa atmega328
-                       awake();
-                     }
-          #endif
-        #endif
-      }
-#endif
-
-
-///////////////////////////////////////////////////////////////
-//////////////////////  TIMERS SETTINGS  //////////////////////
-///////////////////////////////////////////////////////////////
-
-#if (MODEL == MINISLIM)
-
-#define RESOLUTION 65535    // Timer1 is 16 bit
-unsigned int pwmPeriod;
-unsigned char clockSelectBits;
-char oldSREG;					// To hold Status 
-
-void setPeriodTimer1(long microseconds)		// AR modified for atomic access
+float BhorealSlim::readBattery()
 {
-
-  long cycles = (F_CPU / 2000000) * microseconds;                                // the counter runs backwards after TOP, interrupt is at BOTTOM so divide microseconds by 2
-  if(cycles < RESOLUTION)              clockSelectBits = _BV(CS10);              // no prescale, full xtal
-  else if((cycles >>= 3) < RESOLUTION) clockSelectBits = _BV(CS11);              // prescale by /8
-  else if((cycles >>= 3) < RESOLUTION) clockSelectBits = _BV(CS11) | _BV(CS10);  // prescale by /64
-  else if((cycles >>= 2) < RESOLUTION) clockSelectBits = _BV(CS12);              // prescale by /256
-  else if((cycles >>= 2) < RESOLUTION) clockSelectBits = _BV(CS12) | _BV(CS10);  // prescale by /1024
-  else        cycles = RESOLUTION - 1, clockSelectBits = _BV(CS12) | _BV(CS10);  // request was out of bounds, set as maximum
-
-  oldSREG = SREG;				
-  cli();							// Disable interrupts for 16 bit register access
-  ICR1 = pwmPeriod = cycles;                                    // ICR1 is TOP in p & f correct pwm mode
-  SREG = oldSREG;
-
-  TCCR1B &= ~(_BV(CS10) | _BV(CS11) | _BV(CS12));
-  TCCR1B |= clockSelectBits;                                    // reset clock select register, and starts the clock
+	 return analogRead(VBAT)*(VCC_BATTERY/RESOLUTION);
 }
 
-
-void BhorealSlim::timer1Initialize()
-{
-  TCCR1A = 0;                 // clear control register A 
-  TCCR1B = _BV(WGM13);        // set mode 8: phase and frequency correct pwm, stop the timer
-  setPeriodTimer1(5);         // Time interruption in ms
-  TIMSK1 = _BV(TOIE1);                                  
-}
- 
-ISR(TIMER1_OVF_vect)
-{
-       if (PORTE&B01000000) 
-         {
-           PORTB |= B00000010;
-           PORTE &= B10111111;
-         }
-       else 
-         {
-           PORTE |= B01000000;
-           PORTB &= B11111101;
-         }
+//---------------- Functions
+//Writes val to address register on device
+void BhorealSlim::writeTo(int device, byte address, byte val) {
+	 Wire.beginTransmission(device); //start transmission to device 
+	 Wire.write(address);        // write register address
+	 Wire.write(val);        // write value to write
+	 Wire.endTransmission(); //end transmission
 }
 
-#endif
+//reads num bytes starting from address register on device in to buff array
+void BhorealSlim::readFrom(int device, byte address, int num, byte buff[]) {
+	Wire.beginTransmission(device); //start transmission to device 
+	Wire.write(address);        //writes address to read from
+	Wire.endTransmission(); //end transmission
+
+	Wire.beginTransmission(device); //start transmission to device
+	Wire.requestFrom(device, num);    // request 6 bytes from device
+
+	int i = 0;
+	while(Wire.available())    //device may write less than requested (abnormal)
+	 { 
+		buff[i] = Wire.read(); // read a byte
+		i++;
+	 }
+	Wire.endTransmission(); //end transmission
+}
+
+int x=0;
+int y=0;
+int z=0;     
+byte buff[TO_READ] ;    //6 bytes buffer for saving data read from the device
+	  
+void BhorealSlim::checkAccel(){  
+	checkBattery();
+	readFrom(DEVICE, regAddress, TO_READ, buff); //read the acceleration data from the ADXL345
+	x = (((int)buff[1]) << 8) | buff[0]; 
+	x = map(x,-lim,lim,0,1023);  
+	y = (((int)buff[3])<< 8) | buff[2];
+	y = map(y,-lim,lim,0,1023); 
+	z = (((int)buff[5]) << 8) | buff[4];
+	z = map(z,-lim,lim,0,1023); 
+	int limitx = map(x, 448, 575, 7, 0);
+	if (limitx==0) limitx =1;
+	int limity = map(y, 448, 575, 0, 7);
+	if (limity==7) limity=6;
+	if (limitx<2) GIR=2;
+	else if (limitx>5) GIR=0;
+	else if (limity<2) GIR=1;
+	else if (limity>5) GIR=3;  
+	//Serial.println(GIR);
+}
+
+boolean charge_state = false;
+float charge = 0;
+
+void BhorealSlim::checkBattery()
+  {
+	#if (MODEL == SLIMPRO)
+	  #if BAT_MONITOR
+		charge = readBattery();
+		if ((charge<(BAT_MIN - 300))&&(charge>2000)&&(!charge_state))
+		{        
+		  charge_state = true;
+		  slaveSend(2); //Duerme atmega328
+		  sleep();
+		  sleepNow();
+		}
+		else if (((charge>BAT_MIN)||(charge<2000))&&(charge_state))
+				 {
+				   charge_state = false;
+				   slaveRead(1); //Activa atmega328
+				   awake();
+				 }
+	  #endif
+	#endif
+  }
 
 ///////////////////////////////////////////////////////////////
 //////////////////////     HUE -> RGB    //////////////////////
 ///////////////////////////////////////////////////////////////
 
-  uint8_t rh;
-  uint8_t gh;
-  uint8_t bh;
+uint8_t rh;
+uint8_t gh;
+uint8_t bh;
   
 uint32_t BhorealSlim::hue2rgb(uint16_t hueValue)
 {
@@ -1499,7 +1325,7 @@ void BhorealSlim::demoAccel()
     while (mode==3)
   #endif 
     {
-      checkADC();
+      checkAccel();
       for (int i=0; i<8; i++) 
         {
           for (int j=0; j<8; j++)  
@@ -1701,6 +1527,12 @@ void BhorealSlim::setPixelColor(
       }
     }
 
+	
+///////////////////////////////////////////////////////////////
+//////////////////////  TIMERS SETTINGS  //////////////////////
+///////////////////////////////////////////////////////////////
+
+
   void BhorealSlim::serialRequests()
   {
 //    sei();
@@ -1753,6 +1585,10 @@ void BhorealSlim::setPixelColor(
     TIMSK1 &= ~(_BV(TOIE1));     
   }
 #endif
+
+///////////////////////////////////////////////////////////////
+///////////////////////  ICON CREATOR  ////////////////////////
+///////////////////////////////////////////////////////////////
 
 #if (MODEL == SLIMPRO) 
 
@@ -1826,6 +1662,10 @@ void BhorealSlim::checkServer() {
 }
 #endif
 
+///////////////////////////////////////////////////////////////
+///////////////////////  MENU OPTIONS  ////////////////////////
+///////////////////////////////////////////////////////////////
+
 #if (MODEL == SLIM) || (MODEL == SLIMPRO)
   void BhorealSlim::selectMode() {
     #if (MODEL == SLIMPRO) 
@@ -1834,7 +1674,7 @@ void BhorealSlim::checkServer() {
     unsigned long time_blink = millis();
     while (mode == 0)
       {
-         checkADC();
+         checkAccel();
          checkMatrix(SELECTOR);
          for(int x = 0; x < modeMAX; ++x) setPixelColor(remapSlim[GIR][x>>3][x%8], 255, 0, 0);
          for(int x = modeMAX; x < NUM_LEDS; ++x) setPixelColor(remapSlim[GIR][x>>3][x%8], 0, 0, 0);

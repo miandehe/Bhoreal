@@ -9,7 +9,6 @@
 
 #define buffer_length        32     // Buffer for eeprom data
 
-//#define  MODEL  MINISLIM //Modelo
 #define  MODEL  SLIMPRO //Modelo
 // #define  MODEL  SLIM //Modelo
 
@@ -20,17 +19,17 @@ class BhorealSlim {
     void show(void);
     void setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b);
     
-    void begin();
+    void begin(boolean battery);
     void config();
     boolean compareData(char* text, char* text1);
     void writeData(uint32_t eeaddress, char* text);
     char* readData(uint16_t eeaddress);
-    void checkButtons();
+    void checkMenu();
     void displayRefresh();
     void midiRefresh();
     void startup();
     float readBattery();
-    void checkADC();
+    void checkAccel();
     void checkBattery();
     uint32_t hue2rgb(uint16_t hueValue);
     boolean awake();
@@ -42,6 +41,7 @@ class BhorealSlim {
     void printChar(char* text);
     
     //WIFI
+	void wifiBegin();
     boolean apMode();
     boolean Connect();
     boolean reConnect();
@@ -67,6 +67,9 @@ class BhorealSlim {
     
     void AttachInterrupt6(int mode);
     void selectMode();
+	void checkButtonsMIDI();
+	void checkButtonsUDP();
+	
   private:
   
     //Variables
@@ -81,10 +84,7 @@ class BhorealSlim {
     void programMode();
     void on_press(byte r, byte c, byte sel);
     void on_release(byte r, byte c, byte sel);
-    void on_press(byte r, byte c);
-    void on_release(byte r, byte c);
 
-    
     void detachInterrupt6();
     //Accelerometer
     void writeTo(int device, byte address, byte val);

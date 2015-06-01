@@ -13,16 +13,18 @@
 BhorealSlim Bhoreal;
 
 void setup() {
-  Bhoreal.begin();
+  Bhoreal.begin(true);
+  
+  Bhoreal.wifiBegin();
   // Run the startup animation
   Bhoreal.startup();
 }
   
 void loop () {
  
-  Bhoreal.checkButtons();
+  Bhoreal.checkMenu();
   // Check and report the ADC states, if necessary
-  Bhoreal.checkADC();
+  Bhoreal.checkAccel();
   
   Bhoreal.displayRefresh();
 
