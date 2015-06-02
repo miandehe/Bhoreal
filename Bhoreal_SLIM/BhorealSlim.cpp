@@ -176,11 +176,16 @@ void BhorealSlim::begin(boolean battery)
           }
         else 
         {
+		  writeData(EE_ADDR_TIME_VERSION, __TIME__);//Provisional
           EEPROM.write(EE_ADDR_POWER, 1);   
+		  PORTD &= B11101111; //digitalWrite(POWER_VCC, LOW);
           slaveSend(1); //Activa atmega328
         } 
       // Start the serial port   
       Serial.begin(57600); //USB inicializado a 57600 
+	  
+	  
+	  AttachInterrupt6(CHANGE); //Cambio de 0 a 1 Provisional
 	 }
     else
 	 {
@@ -247,7 +252,6 @@ void BhorealSlim::wifiBegin()
           sleep();
         } 
        timer1Initialize();  
-	AttachInterrupt6(CHANGE); //Cambio de 0 a 1
 }	
 #if (MODEL == SLIMPRO)
   void BhorealSlim::config(){
