@@ -30,7 +30,8 @@ void setup() {
   
 void loop () {
  
-  Bhoreal.checkMenu();
+  Bhoreal.checkButtonsUDP();
+
   // Check and report the ADC states, if necessary
   Bhoreal.checkAccel();
   

@@ -1,4 +1,3 @@
-
 #include "bhorealSlim.h"
 #include "Constants.h"
 #include <EEPROM.h>
@@ -203,8 +202,24 @@ void BhorealSlim::begin(boolean battery)
     //AttachInterrupt6(RISING); //Cambio de 0 a 1
 }
 
-void BhorealSlim::wifiBegin()
+char *SSID_;  
+char *Pass_;
+byte Auth_;
+char *IPHOST_;
+int  protocol_;
+uint16_t outPort_;
+uint16_t localPort_;
+
+void BhorealSlim::wifiBegin(char *SSID, char *Pass, int Auth, char *IPHOST, int protocol, uint16_t outPort, uint16_t localPort)
 {
+	SSID_=SSID;  
+	Pass_=Pass;
+	Auth_=Auth;
+	IPHOST_=IPHOST;
+	protocol_=protocol;
+	outPort_=outPort;
+	localPort_=localPort;
+	
     // Start the wifi
       Serial1.begin(baud[0]); //WIFI inicializado a 57600
       #if BAT_MONITOR
@@ -219,7 +234,6 @@ void BhorealSlim::wifiBegin()
       #endif
         {
           awake();
-          #if wifiConfig
             config();
             if (WIFIMode == AP)
               {
@@ -245,15 +259,14 @@ void BhorealSlim::wifiBegin()
                   }
                 else Serial.println("Desconectado :(");
               }
-          #endif
         }
       else 
         {
           sleep();
         } 
        timer1Initialize();  
-}	
-#if (MODEL == SLIMPRO)
+}
+	
   void BhorealSlim::config(){
     if (!compareData(__TIME__, readData(EE_ADDR_TIME_VERSION)))
     {
@@ -269,7 +282,6 @@ void BhorealSlim::wifiBegin()
          reConnect();
     }
   }
-#endif
 
 boolean BhorealSlim::compareData(char* text, char* text1)
 {
@@ -873,13 +885,13 @@ boolean BhorealSlim::apMode()
             SendCommand(F("set wlan rate 12"));
             SendCommand(F("set comm size 1420"));
             SendCommand(F("set ip proto "), true);
-            SendCommand(itoa(protocol));
+            SendCommand(itoa(protocol_));
             SendCommand(F("set ip host "), true);
             SendCommand(IPHOST_AP);
             SendCommand(F("set ip localport "), true);
-            SendCommand(itoa(localPort));
+            SendCommand(itoa(localPort_));
             SendCommand(F("set ip remote "), true);
-            SendCommand(itoa(outPort));
+            SendCommand(itoa(outPort_));
             SendCommand(F(DEFAULT_WIFLY_FTP_UPDATE)); //ftp server update
             SendCommand(F("set ftp mode 1"));
             SendCommand(F("set wlan auth "), true);
@@ -929,38 +941,38 @@ boolean BhorealSlim::reConnect()
             SendCommand(F("set wlan rate 12"));
             SendCommand(F("set comm size 1420"));
             SendCommand(F("set ip proto "), true);
-            SendCommand(itoa(protocol));
+            SendCommand(itoa(protocol_));
             SendCommand(F("set ip host "), true);
-            SendCommand(IPHOST);
+            SendCommand(IPHOST_);
             SendCommand(F("set ip localport "), true);
-            SendCommand(itoa(localPort));
+            SendCommand(itoa(localPort_));
             SendCommand(F("set ip remote "), true);
-            SendCommand(itoa(outPort));
+            SendCommand(itoa(outPort_));
             SendCommand(F(DEFAULT_WIFLY_FTP_UPDATE)); //ftp server update
             SendCommand(F("set ftp mode 1"));
             SendCommand(F("set wlan auth "), true);
-            SendCommand(itoa(myAuth));
+            SendCommand(itoa(Auth_));
             Serial.print(F("AUTH: "));
-            Serial.println(myAuth);
+            Serial.println(Auth_);
             SendCommand(F("set wlan ssid "), true);
-            SendCommand(mySSID);
+            SendCommand(SSID_);
             Serial.print(F("SSID: "));
-            Serial.println(mySSID);
-            if ((myAuth==WPA1)||(myAuth==WPA2)||(myAuth==MIXED)) 
+            Serial.println(SSID_);
+            if ((Auth_==WPA1)||(Auth_==WPA2)||(Auth_==MIXED)) 
               {
                 SendCommand(F("set wlan phrase "), true);  // WPA1, WPA2, MIXED
-                SendCommand(myPass);
+                SendCommand(Pass_);
                 
                 Serial.print(F("PASS: "));
-                Serial.println(myPass);
+                Serial.println(Pass_);
                 
               }
-            else if ((myAuth==WEP)||(myAuth==WEP64)) 
+            else if ((Auth_==WEP)||(Auth_==WEP64)) 
               {
                 SendCommand(F("set wlan key "), true);
-                SendCommand(myPass);
+                SendCommand(Pass_);
                 Serial.print(F("PASS: "));
-                Serial.println(myPass);
+                Serial.println(Pass_);
               }
             SendCommand(F("set wlan ext_antenna "), true);
             SendCommand(antenna);
@@ -1371,19 +1383,6 @@ void BhorealSlim::demoAccel()
       timer1Initialize();
     #endif
   }
-
-  void BhorealSlim::printChar(byte value, byte pos)
-  {
-    for (int i=0; i<8; i++)
-      {
-        for (int j=0; j<8; j++)
-          {
-            byte temp = (character[value][j]>>(7-i))&0x01;
-            setPixelColor(remapSlim[GIR][j][i],temp*255, 0, 0);
-          }
-      }
-      show();
-  }
   
   void BhorealSlim::printChar(char* text)
   {
@@ -1729,30 +1728,28 @@ void BhorealSlim::checkServer() {
   }
 #endif
 
-#if (MODEL == SLIMPRO) 
-  void BhorealSlim::protocolDefine(byte protocol)
-    {
-      if(EnterCommandMode())
-          {               
-              SendCommand(F("set ip proto "), true);
-              SendCommand(itoa(protocol));
-              //SendCommand(F("set u b "), true);
-              SendCommand(F("set uart instant "), true);
-              if (protocol==(TCP+HTML)) SendCommand(itoa(baud[1]));
-              else SendCommand(itoa(baud[0]));
-  //            SendCommand(F("save"), false, "Storing in config"); // Store settings
-  //            SendCommand(F("reboot"), false, "*READY*");
-              if (protocol==(TCP+HTML))
-               {
-                 Serial1.begin(baud[1]);
-                 Serial.println(baud[1]);
-               }
-              else 
-                {
-                  Serial1.begin(baud[0]);
-                  Serial.println(baud[0]);
-                }
-              ExitCommandMode();
-          }
-    }
-#endif
+void BhorealSlim::protocolDefine(byte protocol)
+{
+  if(EnterCommandMode())
+	  {               
+		  SendCommand(F("set ip proto "), true);
+		  SendCommand(itoa(protocol));
+		  //SendCommand(F("set u b "), true);
+		  SendCommand(F("set uart instant "), true);
+		  if (protocol==(TCP+HTML)) SendCommand(itoa(baud[1]));
+		  else SendCommand(itoa(baud[0]));
+//            SendCommand(F("save"), false, "Storing in config"); // Store settings
+//            SendCommand(F("reboot"), false, "*READY*");
+		  if (protocol==(TCP+HTML))
+		   {
+			 Serial1.begin(baud[1]);
+			 Serial.println(baud[1]);
+		   }
+		  else 
+			{
+			  Serial1.begin(baud[0]);
+			  Serial.println(baud[0]);
+			}
+		  ExitCommandMode();
+	  }
+}

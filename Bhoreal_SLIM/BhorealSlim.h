@@ -37,11 +37,10 @@ class BhorealSlim {
     byte slaveRead(byte reg);
     void sleep();
     void sleepNow();
-    void printChar(byte value, byte pos);
     void printChar(char* text);
     
     //WIFI
-	void wifiBegin();
+	void wifiBegin(char *mySSID, char *myPass, int myAuth, char *IPHOST, int protocol, uint16_t outPort, uint16_t localPort);
     boolean apMode();
     boolean Connect();
     boolean reConnect();

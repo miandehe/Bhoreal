@@ -50,49 +50,17 @@ WIFLY Firmware Setting
 
 */
 
-#if MODEL == SLIMPRO
-//  const char mySSID[] = "Miguel";  
-//  const char myPass[] = "FINALFANTASY";
-//  const char *IPHOST = "192.168.0.255";
-//  const byte myAuth = WPA2;
-  
- // const char mySSID[] = "hangar_lab";  
- // const char myPass[] = "labinteractius";
- // const char *IPHOST = "172.26.255.255";
- // const byte myAuth = WPA2;
-  
-//  const char mySSID[] = "hangar_oficines";  
-//  const char myPass[] = "m1cr0fug4s";
-//  const char *IPHOST = "172.26.255.255";
-//  const byte myAuth = WPA2;
-  
-  const char mySSID[] = "Hello_pepe";  // SSID EXTERNAL WIFI
-  const char myPass[] = "labinteractius";   // PASSWORD EXTERNAL WIFI
-  const char *IPHOST = "192.168.0.255"; // IP destination AP MODE
-  const byte myAuth = WPA2;
-  
-//  const char mySSID[] = "mid";  // SSID EXTERNAL WIFI
-//  const char myPass[] = "";   // PASSWORD EXTERNAL WIFI
-//  const char *IPHOST = "192.168.0.255"; // IP destination AP MODE
-//  const byte myAuth = OPEN;
-  
-  const char mySSIDAP[] = "bhoreal";  // SSID AP MODE
-  const char myPassAP[] = "";         // PASSWORD AP MODE
-  const char *IPHOST_AP = "192.168.0.255"; // IP destination AP MODE
-  const byte myAuthAP = OPEN;
-   
-  const int protocol = UDP; // UDP DEFAULT
-  const char antenna[] = INT_ANT; // INTERNAL ANTENNA
-  const uint16_t outPort = 8000;  // DESTINATION UDP PORT
-  const uint16_t localPort = 9000;   // LOCAL UDP PORT
-  
-  // WIFLY FIRMWARE AUTO UPDATE AND VERSIONS
-  #define WIFLY_LATEST_VERSION 441
-  #define DEFAULT_WIFLY_FIRMWARE "ftp update wifly3-441.img"
-  #define DEFAULT_WIFLY_FTP_UPDATE "set ftp address 198.175.253.161"
-#endif
+// WIFLY FIRMWARE AUTO UPDATE AND VERSIONS
+#define WIFLY_LATEST_VERSION 441
+#define DEFAULT_WIFLY_FIRMWARE "ftp update wifly3-441.img"
+#define DEFAULT_WIFLY_FTP_UPDATE "set ftp address 198.175.253.161"
 
-
+const char mySSIDAP[] = "bhoreal";  // SSID AP MODE
+const char myPassAP[] = "";         // PASSWORD AP MODE
+const char *IPHOST_AP = "192.168.0.255"; // IP destination AP MODE
+const byte myAuthAP = OPEN;
+  
+const char antenna[] = INT_ANT; // INTERNAL ANTENNA
 
 /* 
 
@@ -154,87 +122,3 @@ static char* WEB[4]={
                   "Host: apps.ioapps.net \n",
                   "User-Agent: Bhoreal \n\n"  
                   };
-                  
-uint8_t character[10][8] =    // LCD codes for the 0-9 numbers
-  {{ B11111000, //0
-     B10001000,
-     B10001000,
-     B10001000,
-     B10001000,
-     B10001000,
-     B10001000,
-     B11111000},
-   { B00100000, //1
-     B00100000,
-     B00100000,
-     B00100000,
-     B00100000,
-     B00100000,
-     B00100000,
-     B00100000},
-   { B11111000, //2
-     B00001000,
-     B00001000,
-     B00001000,
-     B11111000,
-     B10000000,
-     B10000000,
-     B11111000},
-   { B11111000, //3
-     B00001000,
-     B00001000,
-     B00001000,
-     B11111000,
-     B00001000,
-     B00001000,
-     B11111000},
-   { B10001000, //4
-     B10001000,
-     B10001000,
-     B10001000,
-     B11111000,
-     B00001000,
-     B00001000,
-     B00001000},
-   { B11111000, //5
-     B10000000,
-     B10000000,
-     B10000000,
-     B11111000,
-     B00001000,
-     B00001000,
-     B11111000},
-   { B11111000, //6
-     B10000000,
-     B10000000,
-     B10000000,
-     B11111000,
-     B10001000,
-     B10001000,
-     B11111000},
-   { B11111000, //7
-     B00001000,
-     B00001000,
-     B00001000,
-     B00001000,
-     B00001000,
-     B00001000,
-     B00001000},
-   { B11111000, //8
-     B10001000,
-     B10001000,
-     B10001000,
-     B11111000,
-     B10001000,
-     B10001000,
-     B11111000},
-   { B11111000, //9
-     B10001000,
-     B10001000,
-     B10001000,
-     B11111000,
-     B00001000,
-     B00001000,
-     B00001000}};
-    
-  
