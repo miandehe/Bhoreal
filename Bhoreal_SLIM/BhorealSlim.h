@@ -40,9 +40,9 @@ class BhorealSlim {
     void printChar(char* text);
     
     //WIFI
-	void wifiBegin(char *mySSID, char *myPass, int myAuth, char *IPHOST, int protocol, uint16_t outPort, uint16_t localPort);
-    boolean apMode();
-    boolean Connect();
+	void wifiBegin(int Mode, char *mySSID, char *myPass, int myAuth, char *IPHOST, int protocol, uint16_t outPort, uint16_t localPort);
+    boolean apMode(char *mySSID, char *myPass, int myAuth, char *IPHOST, int protocol, uint16_t outPort, uint16_t localPort);
+    boolean clientMode(char *mySSID, char *myPass, int myAuth, char *IPHOST, int protocol, uint16_t outPort, uint16_t localPort);
     boolean reConnect();
     void protocolDefine(byte protocol);
     void WIFIsleep();
@@ -56,7 +56,7 @@ class BhorealSlim {
     void BaudSetup();
     boolean open(const char *addr, int port);
     boolean close();
-    void WIFIRead();
+    void wifiRead();
     void checkServer();
     
     void timer1Initialize();

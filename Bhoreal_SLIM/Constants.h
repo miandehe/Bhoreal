@@ -13,9 +13,10 @@ WIFI modes
 
 */
 
-#define NORMAL 0
-#define AP     1
-#define PROG_NORMAL 2
+
+#define AP     0
+#define CLIENT 1
+#define PROG_CLIENT 2
 #define PROG_AP     3
 
 /* 
@@ -55,10 +56,10 @@ WIFLY Firmware Setting
 #define DEFAULT_WIFLY_FIRMWARE "ftp update wifly3-441.img"
 #define DEFAULT_WIFLY_FTP_UPDATE "set ftp address 198.175.253.161"
 
-const char mySSIDAP[] = "bhoreal";  // SSID AP MODE
-const char myPassAP[] = "";         // PASSWORD AP MODE
-const char *IPHOST_AP = "192.168.0.255"; // IP destination AP MODE
-const byte myAuthAP = OPEN;
+// const char mySSIDAP[] = "bhoreal";  // SSID AP MODE
+// const char myPassAP[] = "";         // PASSWORD AP MODE
+// const char *IPHOST_AP = "192.168.0.255"; // IP destination AP MODE
+// const byte myAuthAP = OPEN;
   
 const char antenna[] = INT_ANT; // INTERNAL ANTENNA
 
@@ -94,7 +95,7 @@ int regAddress = 0x32;  //first axis-acceleration-data register on the ADXL345
 
 int mode = 1; // mode = MIDI, UDP, TCP, ACEL, .... (1 = MIDI BY DEFAULT)
 boolean charge_on = true; // CHARGER Activated
-int WIFIMode = NORMAL;    // Normal Mode by default (connection to external Wifi network)
+int WIFIMode = CLIENT;    // Client Mode by default (connection to external Wifi network)
 uint16_t NUM_ROWS =  8; 
 int NUM_LEDS   =  64; 
 const uint16_t numBytes = 192;
