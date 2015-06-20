@@ -37,9 +37,9 @@ uint16_t outPort = 8000;  // DESTINATION UDP PORT
 uint16_t localPort = 9000;   // LOCAL UDP PORT
 
 void setup() {
-  Bhoreal.begin(true);
+  Bhoreal.begin(true); //True for use battery
   
-  Bhoreal.wifiBegin(AP, mySSID, myPass, myAuth, IPHOST, protocol, outPort, localPort);
+  Bhoreal.wifiBegin(AP, mySSID, myPass, myAuth, IPHOST, protocol, outPort, localPort); //Only for SLIMPRO
   // Run the startup animation
   Bhoreal.startup();
 }

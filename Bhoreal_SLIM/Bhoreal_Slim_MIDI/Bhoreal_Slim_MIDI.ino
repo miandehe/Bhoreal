@@ -13,7 +13,7 @@
 BhorealSlim Bhoreal;
 
 void setup() {
-  Bhoreal.begin(false);
+  Bhoreal.begin(false); //True for use battery
   // Run the startup animation
   Bhoreal.startup();
 }

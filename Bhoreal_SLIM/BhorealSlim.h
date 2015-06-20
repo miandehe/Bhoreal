@@ -24,7 +24,7 @@ class BhorealSlim {
     boolean compareData(char* text, char* text1);
     void writeData(uint32_t eeaddress, char* text);
     char* readData(uint16_t eeaddress);
-    void checkMenu();
+    void checkMenu(boolean model);
     void displayRefresh();
     void midiRefresh();
     void startup();
@@ -65,7 +65,7 @@ class BhorealSlim {
     void serialRequests();
     
     void AttachInterrupt6(int mode);
-    void selectMode();
+    void selectMode(boolean model);
 	void checkButtonsMIDI();
 	void checkButtonsUDP();
 	

@@ -141,6 +141,8 @@ byte BhorealSlim::slaveRead(byte reg)
 //////////////////////       BHOREAL BEGIN      //////////////////////
 //////////////////////////////////////////////////////////////////////
 
+boolean config_wifi = false;
+
 void BhorealSlim::begin(boolean battery)
 {
     port = portOutputRegister(digitalPinToPort(PIN_LED));
@@ -164,36 +166,29 @@ void BhorealSlim::begin(boolean battery)
     slaveRead(3);  //Check slave ON
 	
     //Gestion de sleep del Bhoreal
-    if (battery)
+
+	if ((EEPROM.read(EE_ADDR_POWER)>0)&&(compareData(__TIME__, readData(EE_ADDR_TIME_VERSION)))&&(battery))
 	 {
-        if ((EEPROM.read(EE_ADDR_POWER)>0)&&(compareData(__TIME__, readData(EE_ADDR_TIME_VERSION))))
-          {
-            EEPROM.write(EE_ADDR_POWER, 0);       
-            slaveSend(2); //Apaga atmega328
-            sleep(); 
-            sleepNow();
-          }
-        else 
-        {
-		  writeData(EE_ADDR_TIME_VERSION, __TIME__);//Provisional
-          EEPROM.write(EE_ADDR_POWER, 1);   
-		  PORTD &= B11101111; //digitalWrite(POWER_VCC, LOW);
-          slaveSend(1); //Activa atmega328
-        } 
-      // Start the serial port   
-      Serial.begin(57600); //USB inicializado a 57600 
-	  
-	  
-	  AttachInterrupt6(CHANGE); //Cambio de 0 a 1 Provisional
+		EEPROM.write(EE_ADDR_POWER, 0);       
+		slaveSend(2); //Apaga atmega328
+		sleep(); 
+		sleepNow();
 	 }
-    else
+	else 
 	 {
-        PORTD &= B11101111; //digitalWrite(POWER_VCC, LOW);
-        slaveSend(1); //Activa atmega328
-	 }
-    
+	    if (!compareData(__TIME__, readData(EE_ADDR_TIME_VERSION)))
+		 {
+		   writeData(EE_ADDR_TIME_VERSION, __TIME__);//Provisional  
+		   config_wifi = true;
+		 }
+	    if (battery) EEPROM.write(EE_ADDR_POWER, 1);   
+	    PORTD &= B11101111; //digitalWrite(POWER_VCC, LOW);
+	    slaveSend(1); //Activa atmega328
+	 } 
+	// Start the serial port   
+	Serial.begin(57600); //USB inicializado a 57600 
+	AttachInterrupt6(CHANGE); //Cambio de 0 a 1 Provisional
     show();
-	
     writeTo(DEVICE, 0x2D, 0x08);
 //  writeTo(DEVICE, 0x31, 0x00); //2g
 //  writeTo(DEVICE, 0x31, 0x01); //4g
@@ -220,32 +215,32 @@ void BhorealSlim::wifiBegin(int Mode, char *SSID, char *Pass, int Auth, char *IP
         if (true) // ????????
       #endif
         {
-          awake();
-            config();
-            if (WIFIMode == AP)
-              {
-                if (apMode(SSID, Pass, Auth, IPHOST, protocol, outPort, localPort))
-                  {
-                    Serial.print("MAC: "); Serial.println(getMAC()); 
-                    Serial.print("IP: "); Serial.println(getIP()); 
-                  }
-                else Serial.println("Desconectado :(");
-              }
-            else 
-              {
-                if (clientMode(SSID, Pass, Auth, IPHOST, protocol, outPort, localPort)) 
-                  {
-                    Serial.println("Conectado!!");
-                    int report = checkWiFly();
-                    if (report == 1) Serial.println(F("Wifly Updated."));
-                    else if (report == 2) Serial.println(F("Update Fail."));
-                    else if (report == 0) Serial.println(F("WiFly up to date."));
-                    else if (report == -1) Serial.println(F("Error reading the wifi version."));
-                    Serial.print("MAC: "); Serial.println(getMAC()); 
-                    Serial.print("IP: "); Serial.println(getIP()); 
-                  }
-                else Serial.println("Desconectado :(");
-              }
+            awake();
+			if (config_wifi) config();
+			if (WIFIMode == AP)
+			  {
+				if (apMode(SSID, Pass, Auth, IPHOST, protocol, outPort, localPort))
+				  {
+					Serial.print("MAC: "); Serial.println(getMAC()); 
+					Serial.print("IP: "); Serial.println(getIP()); 
+				  }
+				else Serial.println("Desconectado :(");
+			  }
+			else 
+			  {
+				if (clientMode(SSID, Pass, Auth, IPHOST, protocol, outPort, localPort)) 
+				  {
+					Serial.println("Conectado!!");
+					int report = checkWiFly();
+					if (report == 1) Serial.println(F("Wifly Updated."));
+					else if (report == 2) Serial.println(F("Update Fail."));
+					else if (report == 0) Serial.println(F("WiFly up to date."));
+					else if (report == -1) Serial.println(F("Error reading the wifi version."));
+					Serial.print("MAC: "); Serial.println(getMAC()); 
+					Serial.print("IP: "); Serial.println(getIP()); 
+				  }
+				else Serial.println("Desconectado :(");
+			  }
         }
       else 
         {
@@ -255,15 +250,11 @@ void BhorealSlim::wifiBegin(int Mode, char *SSID, char *Pass, int Auth, char *IP
 }
 	
   void BhorealSlim::config(){
-    if (!compareData(__TIME__, readData(EE_ADDR_TIME_VERSION)))
-    {
-      writeData(EE_ADDR_TIME_VERSION, __TIME__);
       BaudSetup();
       reset();
       delay(1000);
       BaudSetup();
       delay(1000);
-    }
   }
 
 boolean BhorealSlim::compareData(char* text, char* text1)
@@ -326,6 +317,7 @@ void BhorealSlim::startup(){
 //////////////////////////////////////////////////////////////////////
 
 byte value_send = 0;
+
 void BhorealSlim::on_press(byte r, byte c, byte sel){
     value_send = remapMATRIX[GIR][c][r];
     if (sel == MIDI) 
@@ -360,18 +352,18 @@ void BhorealSlim::on_release(byte r, byte c, byte sel){
 byte count_column = 0;
 byte count_file = 0;
 unsigned long time_button = 0;
-#if (MODEL == SLIMPRO) 
-  const byte modeMAX = 6;
-#else
-  const byte modeMAX = 4;
-#endif
 
-void BhorealSlim::checkMenu(){
-      switch (mode) {
+byte modeMAX = 6;
+byte model_=0;
+void BhorealSlim::checkMenu(boolean model){
+	  model_=model;
+	  if (model) 
+	   {
+		modeMAX=6;
+		switch (mode) {
         case 0:
-          selectMode();
+          selectMode(model);
           break;
-      #if (MODEL == SLIMPRO)
         case 1:
           midiRefresh();
           // Check the button states
@@ -390,26 +382,34 @@ void BhorealSlim::checkMenu(){
         case 5:
           white();
           break;
-        case modeMAX:
+        case 6:
           checkServer();
           break;
-      #else
-        case 1:
-          midiRefresh();
-          // Check the button states
-          checkMatrix(MIDI);
-          break;
-        case 2:
-          programMode();
-          break;
-        case 3:
-          demoAccel();
-          break;
-        case modeMAX:
-          white();
-          break;
-      #endif
-        }
+		}
+	   }
+	  else 
+	   {
+		 modeMAX=4;
+	     switch (mode) {
+			case 0:
+			  selectMode(model);
+			  break;
+			case 1:
+			  midiRefresh();
+			  // Check the button states
+			  checkMatrix(MIDI);
+			  break;
+			case 2:
+			  programMode();
+			  break;
+			case 3:
+			  demoAccel();
+			  break;
+			case 4:
+			  white();
+			  break;
+		}
+	   }
 }
 
 void BhorealSlim::checkButtonsMIDI()
@@ -808,7 +808,7 @@ void BhorealSlim::sleep() {
 
 boolean BhorealSlim::awake() {
       PORTD &= B11101111; //digitalWrite(POWER_VCC, LOW); 
-      //delay(500);
+      delay(500);
       writeTo(DEVICE, 0x2D, 0x08);
   //  writeTo(DEVICE, 0x31, 0x00); //2g
   //  writeTo(DEVICE, 0x31, 0x01); //4g
@@ -867,15 +867,16 @@ boolean BhorealSlim::apMode(char *SSID, char *Pass, int Auth, char *IPHOST, int 
             SendCommand(F("set wlan join 7")); // Enable AP mode
             SendCommand(F("set ip dhcp 4")); //Enables DHCP server in soft AP mode
             SendCommand(F("set ip address 192.168.1.2"));
-            SendCommand(F("set ip gateway 192.168.1.1"));
+            SendCommand(F("set ip gateway 192.168.1.2"));
             SendCommand(F("set ip net 255.255.255.0"));
-            SendCommand(F("set comm time 0"));
+            SendCommand(F("set comm time 20"));//default 5
             SendCommand(F("set sys sleep 0"));
             SendCommand(F("set ip flags 0x6"));
             SendCommand(F("set sys trig 0"));
             SendCommand(F("set uart mode 0x10"));
             SendCommand(F("set wlan rate 12"));
             SendCommand(F("set comm size 1420"));
+			
             SendCommand(F("set ip proto "), true);
             SendCommand(itoa(protocol));
             SendCommand(F("set ip host "), true);
@@ -1153,9 +1154,11 @@ boolean BhorealSlim::reConnect()
   
   void BhorealSlim::WIFISend(byte value, boolean state)
   {
+	timer1Stop();
     //byte val = (state<<7)|((r << 3) | c);
     Serial1.write((state<<7)|value);
     //Serial.write(val);
+	timer1Initialize();
   }
 
   boolean connected = false;
@@ -1201,7 +1204,6 @@ boolean BhorealSlim::reConnect()
 
 //Esta interrupcion no esta soportada por la libreria arcore
 
-#if (MODEL == SLIM) || (MODEL == SLIMPRO)
   void BhorealSlim::AttachInterrupt6(int mode)
   {
       EICRB = (EICRB & ~((1<<ISC60) | (1<<ISC61))) | (mode << ISC60);
@@ -1254,7 +1256,9 @@ boolean BhorealSlim::reConnect()
   ///////////////////////////////////////////////////////////////
   //////////////////////    Program mode   //////////////////////
   ///////////////////////////////////////////////////////////////    
-  
+
+byte const_program = 3;
+
 void BhorealSlim::programMode()
     {
       unsigned long time = 0;
@@ -1266,14 +1270,16 @@ void BhorealSlim::programMode()
       show();
       int limit_ant = 0;
       int limit = 1;
-      #if (MODEL == SLIMPRO) 
-         timer1Stop();
-         while (mode==3)
-      #else 
-         while (mode==2)
-      #endif
+	  if (model_)
+	   {
+		 timer1Stop();
+		 const_program = 3;
+	   }
+	  else	const_program = 2;
+      while (mode==const_program)
         {
-          #if (MODEL == SLIMPRO)
+          if (model_)
+		  {
            float charge = readBattery();
            limit = map(charge, 3000, 4200, 0, 7);
            if (limit!=limit_ant)
@@ -1284,7 +1290,7 @@ void BhorealSlim::programMode()
               show();
               limit_ant = limit;
             }
-          #endif
+           }
            if (Serial.available())
             {
               if (flagprog)
@@ -1311,9 +1317,7 @@ void BhorealSlim::programMode()
           slaveSend(1); //Activa atmega328
        }
        digitalWrite(MUX, HIGH); 
-       #if (MODEL == SLIMPRO) 
-         timer1Initialize();
-       #endif
+       if (model_)  timer1Initialize();
        Serial1.begin(baud[0]);
     }
 	
@@ -1321,14 +1325,17 @@ void BhorealSlim::programMode()
 //////////////////////       Demo        //////////////////////
 ///////////////////////////////////////////////////////////////  
 
+byte const_accel = 4;
 void BhorealSlim::demoAccel()
 {  
-  #if (MODEL == SLIMPRO) 
+  if (model_)
+  {
     timer1Stop();
-    while (mode==4)
-  #else
-    while (mode==3)
-  #endif 
+    const_accel = 4;
+  }
+  else	const_accel = 3;
+
+  while (mode==const_accel)
     {
       checkAccel();
       for (int i=0; i<8; i++) 
@@ -1348,29 +1355,27 @@ void BhorealSlim::demoAccel()
       setPixelColor(remapSlim[0][limitx-1][limity+1], 255, 0, 0);
       show();
    }
-   #if (MODEL == SLIMPRO) 
-     timer1Initialize();
-   #endif
+   
+   if (model_) timer1Initialize();
 }
 
-#endif
+byte const_white = 5;
 
-#if (MODEL == SLIM) || (MODEL == SLIMPRO)
   void BhorealSlim::white()
   { 
-    #if (MODEL == SLIMPRO)
-      timer1Stop(); 
-      while (mode==5)
-    #else
-      while (mode==4)
-    #endif
+	if (model_)
+	  {
+		timer1Stop();
+		const_white = 5;
+	  }
+	else const_white = 4;
+
+	while (mode==const_white)
       {
         for(int x = 0; x < NUM_LEDS; ++x) setPixelColor(x, 255, 255, 255);
         show();  
       }
-    #if (MODEL == SLIMPRO) 
-      timer1Initialize();
-    #endif
+    if (model_)timer1Initialize();
   }
   
   void BhorealSlim::printChar(char* text)
@@ -1385,7 +1390,6 @@ void BhorealSlim::demoAccel()
     }
     show();
   }
-#endif
 
 ///////////////////////////////////////////////////////////////
 //////////////////////    Control led    //////////////////////
@@ -1485,8 +1489,6 @@ void BhorealSlim::setPixelColor(
 }
 
 /*TIMER*/
-
-#if (MODEL == SLIMPRO)
    
   boolean offsetWIFI = 0;
   byte inByte = 0;
@@ -1577,7 +1579,6 @@ void BhorealSlim::setPixelColor(
     TCCR1B &= ~(_BV(CS10) | _BV(CS11) | _BV(CS12));          // clears all clock selects bits
     TIMSK1 &= ~(_BV(TOIE1));     
   }
-#endif
 
 ///////////////////////////////////////////////////////////////
 ///////////////////////  ICON CREATOR  ////////////////////////
@@ -1659,64 +1660,60 @@ void BhorealSlim::checkServer() {
 ///////////////////////  MENU OPTIONS  ////////////////////////
 ///////////////////////////////////////////////////////////////
 
-// #if (MODEL == SLIM) || (MODEL == SLIMPRO)
-  // void BhorealSlim::selectMode() {
-    // #if (MODEL == SLIMPRO) 
-      // timer1Stop();
-    // #endif
-    // unsigned long time_blink = millis();
-    // while (mode == 0)
-      // {
-         // checkAccel();
-         // checkMatrix(SELECTOR);
-         // for(int x = 0; x < modeMAX; ++x) setPixelColor(remapSlim[GIR][x>>3][x%8], 255, 0, 0);
-         // for(int x = modeMAX; x < NUM_LEDS; ++x) setPixelColor(remapSlim[GIR][x>>3][x%8], 0, 0, 0);
-         // setPixelColor(remapSlim[GIR][(mode_ant)>>3][(mode_ant)%8], 0, 255, 0);
-         // #if (MODEL == SLIMPRO) 
-           // if (charge_on) 
-             // {
-               // slaveSend(5); 
-               // setPixelColor(remapSlim[GIR][62>>3][62%8], 0, 255, 0);
-             // }
-           // else 
-             // {
-               // slaveSend(4);
-               // setPixelColor(remapSlim[GIR][62>>3][62%8], 255, 0, 0);
-             // }
-           // if (WIFIMode == AP)
-            // {
-              // if ((millis()-time_blink)<250) setPixelColor(remapSlim[GIR][63>>3][63%8], 255, 255, 0);
-              // else if ((millis()-time_blink)>=500) time_blink = millis();
-              // else  setPixelColor(remapSlim[GIR][63>>3][63%8], 0, 0, 0);
-            // }
-           // else if (WIFIMode == CLIENT)
-            // {
-              // if ((millis()-time_blink)<250) setPixelColor(remapSlim[GIR][63>>3][63%8], 0, 0, 255);
-              // else if ((millis()-time_blink)>=500) time_blink = millis();
-              // else  setPixelColor(remapSlim[GIR][63>>3][63%8], 0, 0, 0);
-            // }
-           // else if (WIFIMode == PROG_CLIENT)
-            // {
-              // setPixelColor(remapSlim[GIR][63>>3][63%8], 255, 0, 255);
-              // show();
-              // while (!reConnect());
-              // WIFIMode = CLIENT;
-            // }
-           // else if (WIFIMode == PROG_AP)
-            // {
-              // setPixelColor(remapSlim[GIR][63>>3][63%8], 255, 0, 255);
-              // show();
-              // apMode();
-              // WIFIMode = AP;
-            // }
-          // #endif
-          // show();
-      // }
-       // #if (MODEL == SLIMPRO) 
-         // timer1Initialize();
-       // #endif
-  // }
-// #endif
+  void BhorealSlim::selectMode(boolean model) {
+    
+    if (model)  timer1Stop();
+    unsigned long time_blink = millis();
+    while (mode == 0)
+      {
+         checkAccel();
+         checkMatrix(SELECTOR);
+         for(int x = 0; x < modeMAX; ++x) setPixelColor(remapSlim[GIR][x>>3][x%8], 255, 0, 0);
+         for(int x = modeMAX; x < NUM_LEDS; ++x) setPixelColor(remapSlim[GIR][x>>3][x%8], 0, 0, 0);
+         setPixelColor(remapSlim[GIR][(mode_ant)>>3][(mode_ant)%8], 0, 255, 0);
+         if (model) 
+		 {
+           if (charge_on) 
+             {
+               slaveSend(5); 
+               setPixelColor(remapSlim[GIR][62>>3][62%8], 0, 255, 0);
+             }
+           else 
+             {
+               slaveSend(4);
+               setPixelColor(remapSlim[GIR][62>>3][62%8], 255, 0, 0);
+             }
+           if (WIFIMode == AP)
+            {
+              if ((millis()-time_blink)<250) setPixelColor(remapSlim[GIR][63>>3][63%8], 255, 255, 0);
+              else if ((millis()-time_blink)>=500) time_blink = millis();
+              else  setPixelColor(remapSlim[GIR][63>>3][63%8], 0, 0, 0);
+            }
+           else if (WIFIMode == CLIENT)
+            {
+              if ((millis()-time_blink)<250) setPixelColor(remapSlim[GIR][63>>3][63%8], 0, 0, 255);
+              else if ((millis()-time_blink)>=500) time_blink = millis();
+              else  setPixelColor(remapSlim[GIR][63>>3][63%8], 0, 0, 0);
+            }
+           else if (WIFIMode == PROG_CLIENT)
+            {
+              setPixelColor(remapSlim[GIR][63>>3][63%8], 255, 0, 255);
+              show();
+              while (!reConnect());
+              WIFIMode = CLIENT;
+            }
+           else if (WIFIMode == PROG_AP)
+            {
+              setPixelColor(remapSlim[GIR][63>>3][63%8], 255, 0, 255);
+              show();
+              apMode("Bhoreal", "", OPEN, "192.168.1.255", UDP, 8000, 9000);
+              WIFIMode = AP;
+            }
+		 }
+         show();
+      }
+	  if (model) timer1Initialize();
+  }
 
 void BhorealSlim::protocolDefine(byte protocol)
 {
